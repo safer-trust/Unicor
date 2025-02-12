@@ -35,7 +35,7 @@ An example `dnstap` alert in Slack:
 
 ### Installing Unicor
 
-#### Binary installation
+#### Binary installation
 The recommended installation path is to use a binary form of Unicor, produced by PyInstaller.
 
 (It may be necessary to install dependencies and specifically reference PyMISP)
