@@ -21,3 +21,5 @@ Commands:
   fetch-iocs  Fetch IOCs from intelligence sources
 ```
 
+A ELF 64-bit dynamically linked version is also directly available in the [dist directory](https://github.com/safer-trust/unicor/tree/main/src/dist) of the repository.
+
