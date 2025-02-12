@@ -34,8 +34,10 @@ An example `dnstap` alert in Slack:
 ## Installation guide
 
 ### Installing Unicor
-    
-The recommended installation path is to use a binary form of unicor, produced by PyInstaller.
+
+#### Binary installation
+The recommended installation path is to use a binary form of Unicor, produced by PyInstaller.
+
 (It may be necessary to install dependencies and specifically reference PyMISP)
 ```
 git clone https://github.com/safer-trust/unicor.git
@@ -57,12 +59,64 @@ Commands:
   correlate   Correlate input files and output matches
   fetch-iocs  Fetch IOCs from intelligence sources
 ```
-
 A ELF 64-bit dynamically linked version is also directly available in the [dist directory](https://github.com/safer-trust/unicor/tree/main/src/dist) of the repository.
+
+Move the binary in one of the executable PATH, for example:
+
+  ```sh
+  sudo mv ./dist/unicor /usr/local/bin/
+  ```
 
 ### Configuring Unicor
 
-MISP, paths, alerts
+#### Filesystem preparation
+
+Create the relevant user, files and directories, and assign permissions:
+
+    ```sh
+    sudo useradd --system --no-create-home --shell /usr/sbin/nologin unicor
+    mkdir -p /var/unicor /var/dnscollector/alerts /var/unicor/queries /var/unicor/matches
+    touch /var/unicor/alerts/matches.json /var/unicor/misp_ips.txt /var/unicor/misp_domains.txt /var/unicor/queries/queries.json /var/unicor/alerts_db.txt /var/unicor/matches/matches_domains.json /var/unicor/matches/matches_ips.json
+    chown -R unicor:unicor /var/unicor/
+    chmod -R u+rw /var/unicor/
+    sudo mkdir /etc/unicor
+    ```
+
+#### Configuration file & CRON
+
+- Create the Unicor configuration file (`config.yml`) under `/etc/unicor/`, based on the [Unicor template]([https://github.com/safer-trust/pdnssoc-cli/blob/main/config/pdnssoccli.yml](https://github.com/safer-trust/unicor/blob/main/config/config.yml).
+
+   ```sh
+   curl -o /etc/unicor/config.yml https://raw.githubusercontent.com/safer-trust/pdnssoc-cli/refs/heads/main/config/pdnssoccli.yml
+   chown -R unicor:unicor /etc/unicor
+   ```
+
+- Modify it to add you MISP URL + API, and configure a destination output for alerts. Webhooks are recommended.
+  
+  ```sh
+  vi /etc/unicor/config.yml
+  ```
+
+- Test your configuration file
+  ```sh
+  # pip install yamllint
+  # yamllint /etc/unicor/config.yml
+  ```
+
+- Test the Unicor commands
+  ```sh
+  # sudo -u unicor unicor fetch-iocs
+  # sudo -u unicor unicor correlate
+  # sudo -u unicor unicor alert
+  ```
+
+- Add a CRON to run Unicor on a schedule, for example in `/etc/crontab`:
+
+  ```
+  * * * * * unicor unicor fetch-iocs  >> /var/log/unicor-fetch-iocs.log 2>&1
+  * * * * * unicor unicor correlate  /var/unicor/matches >> /var/log/unicor-correlate.log 2>&1 &&  pdnssoc-cli alert  /var/unicor/alerts/ >> /var/log/unicor-alert.log 2>&1
+  * * * * * unicor ([ $(awk '{print $1}' /proc/loadavg) \< 0.5 ] && unicor correlate --retro_disco_lookup /var/unicor/queries/) >> /var/log/unicor-retro.log  2>&1
+  ```
 
 ### Supported sources
 
