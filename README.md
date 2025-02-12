@@ -33,9 +33,9 @@ An example `dnstap` alert in Slack:
 
 ## Installation guide
 
-### Installing Unicor
+### 1. Installing Unicor
 
-#### Binary installation
+#### 1.1 Binary installation
 The recommended installation path is to use a binary form of Unicor, produced by PyInstaller.
 
 (It may be necessary to install dependencies and specifically reference PyMISP)
@@ -66,10 +66,21 @@ Move the binary in one of the executable PATH, for example:
   ```sh
   sudo mv ./dist/unicor /usr/local/bin/
   ```
+### 1.1 Repo installation
 
-### Configuring Unicor
+This is not recommended and may result in a number of issues with Python dependencies, paths, and venv mishaps. 
 
-#### Filesystem preparation
+```
+git clone https://github.com/safer-trust/unicor.git
+cd unicor/src/
+
+
+sudo mv ./dist/unicor /usr/local/bin/
+```
+
+### 2. Configuring Unicor
+
+#### 2.1 Filesystem preparation
 
 Create the relevant user, files and directories, and assign permissions:
 
@@ -82,7 +93,7 @@ Create the relevant user, files and directories, and assign permissions:
     sudo mkdir /etc/unicor
     ```
 
-#### Configuration file & CRON
+#### 2.2 Configuration file & CRON
 
 - Create the Unicor configuration file (`config.yml`) under `/etc/unicor/`, based on the [Unicor template]([https://github.com/safer-trust/pdnssoc-cli/blob/main/config/pdnssoccli.yml](https://github.com/safer-trust/unicor/blob/main/config/config.yml).
 
@@ -115,12 +126,88 @@ Create the relevant user, files and directories, and assign permissions:
   ```
   * * * * * unicor unicor fetch-iocs  >> /var/log/unicor-fetch-iocs.log 2>&1
   * * * * * unicor unicor correlate  /var/unicor/matches >> /var/log/unicor-correlate.log 2>&1 &&  pdnssoc-cli alert  /var/unicor/alerts/ >> /var/log/unicor-alert.log 2>&1
-  * * * * * unicor ([ $(awk '{print $1}' /proc/loadavg) \< 0.5 ] && unicor correlate --retro_disco_lookup /var/unicor/queries/) >> /var/log/unicor-retro.log  2>&1
   ```
 
-### Supported sources
+- Optional: Enable retro-searches
 
-#### dnstap and [DNS-collector](https://github.com/dmachard/DNS-collector)
+Unicor can reprocess and re-correlated JSON input as new MISP events are added.
+  1. Create a dedicated directory to add JSON files, for example: `/var/unicor/archive/`
+  2. Add another CRON to run retro-searches on a schedule, for example in `/etc/crontab`:
+
+  ```
+    * * * * * unicor ([ $(awk '{print $1}' /proc/loadavg) \< 0.5 ] && unicor correlate --retro_disco_lookup /var/unicor/archive/) >> /var/log/unicor-retro.log  2>&1
+  ```
+
+The main use case here is `dnstap` data process with [DNS-collector](https://github.com/dmachard/DNS-collector), where a dedicated `pipelines`
+to archive all DNS queries has previously been added as follows:
+  ```
+   - name: fileall
+     logfile:
+          file-path: /var/dnscollector/queries/queries.json
+          mode: json
+          flush-interval: 1
+          # Tune the size and number of files used for retro searches here:
+          max-size: 200
+          max-files: 5
+          chan-buffer-size: 65535
+          postrotate-delete-success: true
+  ```
+
+Please refer to the [DNS-collector](https://github.com/dmachard/DNS-collector) configuration below for more information.
+
+
+### 3. Adding supported sources
+
+#### dnstap and [DNS-collector](https://github.com/dmachard/DNS-collector)
 
 <a name="unicor-json-schema"></a>
 #### input Unicor JSON 
+
+Any data following the Unicor JSON schema can be added as a source.
+
+JSON files must be placed with a `.json` extension in the configured `input_dir` in `/etc/unicor/config.yml`.
+- The default is `/var/dnscollector/matches/`
+- An example input file could be `/var/dnscollector/matches/zeek-2025-02-14.json`
+- The JSON files contain **one JSON object per line**, each representing a potential alert
+- Each line **must follow** the Unicor JSON schema 
+
+Unicor JSON schema, originally in ONE LINE, but made prettier below:
+  ```
+  {
+   "ioc": "${domain or ip}",  // domain or IP address
+   "type": "${type}", // Optional field expressing the type of IOC. Type can be "ip" or "domain"
+   "timestamp-rfc3339ns": "${time}", 
+   "detection": "${alert}", // Text or simple Markdown with the actual alert
+   "uid": "${uid}", // Optional uid of the source event
+   "url": "${url}", // Optional url of the source event
+  }
+  ```
+
+#### input Unicor JSON examples
+
+In Zeek, `${alert}` could be: `"id.orig_h:id.orig_p -> id.resp_h:id.resp_p (seen.where)"`
+Example:
+  ```
+  {
+   "ioc": "evil.top",
+   "timestamp-rfc3339ns": "2025-02-07T18:50:51.659830055Z",
+   "detection": "*Connection: `188[.]184[.]21[.]197:3245` -> `123[.]345[.]123[.]456` (X509::IN_CERT)",
+   "uid": "Cm8QYURGEZkdmwMFi",
+  }
+  ```
+For netflows, a valid input could be:
+
+  ```
+  {
+   "ioc": "123[.]345[.]123[.]456",
+   "type": "ip",
+   "timestamp-rfc3339ns": "2025-02-09T11:50:11.659830055Z",
+   "detection": "*Connection: `188[.]184[.]21[.]197:3245` -> `123[.]345[.]123[.]456`\n*Bytes*: 4Kb sent, 1MB received",
+   "url": "https://security-dashboard.uni.edu",
+  }
+  ```
+
+
+
+
+
