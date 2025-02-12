@@ -1,3 +1,9 @@
+<picture>
+  <img src="unicor.png" alt="Unicor logo" width="30%" align="right">
+</picture>
+
+
+
 The recommended installation path is to use a binary form of unicor, produced by PyInstaller.
 (It may be necessary to install dependencies and specifically reference PyMISP)
 ```
