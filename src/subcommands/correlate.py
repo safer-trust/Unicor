@@ -16,7 +16,7 @@ import shutil
 
 logger = logging.getLogger(__name__)
 
-@click.command(help="Correlate input files and output matches")
+@click.command(help="Correlate input files and produce matches for potential alerts. Add --retro_disco_lookup to reprocesses input in the list of newer MISP events")
 @click.argument(
     'files',
     nargs=-1,
