@@ -7,15 +7,15 @@
 
 **Unicor is a generic correlation and alerting engine, matching MISP events against JSON input from a variety of sources.**
 
-Sources include dnstap with [DNS-collector](https://github.com/dmachard/DNS-collector) or any JSON source in the [Unicor schema](#unicor-json-schema) and include Zeek, Netflow alerts and more.
+Sources include `dnstap` with [DNS-collector](https://github.com/dmachard/DNS-collector) or any JSON source in the [Unicor schema](#unicor-json-schema) and include Zeek, Netflow alerts and more.
 
 Unicor does retro-searches too, it will go back to previously ingested data and attempt to match it again against more recently added MISP events.
 
-Unicor is the successor of [pDNSSOC](https://github.com/safer-trust/pdnssoc-cli), and is proudly supported by [SAFER](https://safer-trust.org).
+Unicor is the successor of [pDNSSOC](https://github.com/safer-trust/pdnssoc-cli), and is proudly supported by [SAFER](https://safer-trust.org) members.
 
 ## Installation summary
 
-A complete Unicor installation requires:
+A complete Unicor installation only requires:
   1. Access to a MISP instance (URL + API key are required)
   2. A source of data, for example:
     - `dnstap` files (typically rsync'ed via SSH) and a local [DNS-collector](https://github.com/dmachard/DNS-collector)
@@ -24,7 +24,12 @@ A complete Unicor installation requires:
 
 The installation guide will focus first on deploying and configuring Unicor, then provide configuration examples for different input sources.
 
-###
+An example `dnstap` alert in Slack:
+
+<picture>
+  <img src="unicor_alert.png" alt="Unicor alert example" width="50%">
+</picture>
+
 
 ## Installation guide
 
