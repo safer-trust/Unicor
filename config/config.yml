@@ -1,36 +1,36 @@
-logging_level: "INFO"
+logging_level: "INFO" # INFO is recommended
 misp_servers:
- - domain: "http://misp-demo.es.net/"
-   api_key: "My_MISP_API_key"
-   verify_ssl: True
+ - domain: "http://misp-demo.es.net/" # <-- You MUST ADD YOUR OWN MISP URL HERE
+   api_key: "My_MISP_API_key" # <-- You MUST ADD YOUR OWN MISP API KEY HERE
+   verify_ssl: True # Switch to false to debug, stick to True in production
    debug: False 
-   # misp.search() arguments
+   # misp.search() arguments. Expert mode below to enable IOC decaying.
    args:
-     enforce_warninglist: True 
-   periods:
+     enforce_warninglist: True  # This is to enable MISP Warninglists and avoid false positives
+   periods: # Here we configure stagging of IOC. We take all IOCs within the last $days days. Default is 30.
      generic:
        delta:
-         days: 50
-     tags:
+         days: 30
+     tags: # In addition, if the events have specific $names tags, we will also enclude older events up to $days days.
      - names:
          - "apt"
          - "tlp:amber"
        delta: 
          days: 365 
 
-correlation:
-  input_dir: /var/unicor/matches # use this if no files are defined from commmand line
-  output_dir: /var/unicor/alerts
-  archive_dir: /var/unicor/archive # use this as input for looking back
-  alerts_database: /var/unicor/alerts_db.txt
-  alerts_database_max_size: 300 #This is how many alerts we keep in the buffer before re-notifying  
-  malicious_domains_file: /var/unicor/misp_domains.txt
-  malicious_ips_file: /var/unicor/misp_ips.txt
+correlation: # use this if no files are defined from commmand line
+  input_dir: /var/unicor/matches # This is were JSON input from dns-collector, Zeek, etc. goes
+  output_dir: /var/unicor/alerts # Unicor correlate will produce alerts to be sent here
+  alerts_database: /var/unicor/alerts_db.txt # Keep track of alerts sent and avoid duplicates for a while 
+  alerts_database_max_size: 300 # This is how many alerts we keep in the buffer before re-notifying  
+  malicious_domains_file: /var/unicor/misp_domains.txt # fetch-iocs will add domains from MISP here
+  malicious_ips_file: /var/unicor/misp_ips.txt # fetch-iocs will add IPs from MISP here
 
 alerting:
-  # method: slack or email
-#  slack: 
-#     slack_hook: "https://hooks.slack.com/services/..."
+  # At least one of the following needs to be enabled. Slack is the prefered choice.
+  slack: 
+     slack_hook: "https://hooks.slack.com/services/..." # <-- You MUST ADD YOUR OWN WEBHOOK
+     
 #  email:
 #    from: "security@your_org.net"
 #    subject: "[Unicor] your_org DNS alert"
