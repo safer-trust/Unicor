@@ -13,7 +13,7 @@ Unicor does retro-searches too, it will go back to previously ingested data and 
 
 Unicor is the successor of [pDNSSOC](https://github.com/safer-trust/pdnssoc-cli), and is proudly supported by [SAFER](https://safer-trust.org) members.
 
-## Usage
+## Usage
 
 ```
 Usage: unicor [OPTIONS] COMMAND [ARGS]...
