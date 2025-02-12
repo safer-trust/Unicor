@@ -13,6 +13,23 @@ Unicor does retro-searches too, it will go back to previously ingested data and 
 
 Unicor is the successor of [pDNSSOC](https://github.com/safer-trust/pdnssoc-cli), and is proudly supported by [SAFER](https://safer-trust.org) members.
 
+## Usage
+
+```
+Usage: unicor [OPTIONS] COMMAND [ARGS]...
+
+Options:
+  -c, --config FILE  Read option defaults from the specified yaml file
+                     [default: /etc/unicor/config.yml]
+  --help             Show this message and exit.
+
+Commands:
+  fetch-iocs  Fetch IOCs from MISP, typically domains and IPs
+  correlate                       Correlate input files and produce matches for potential alerts
+  correlate --retro_disco_lookup  Reprocesses input in the list of newer MISP events
+  alert                           Send alerts to a pre-defined location
+```
+
 ## Installation summary
 
 A complete Unicor installation only requires:
@@ -66,7 +83,7 @@ Move the binary in one of the executable PATH, for example:
   ```sh
   sudo mv ./dist/unicor /usr/local/bin/
   ```
-### 1.1 Repo installation
+#### 1.2 Repo installation
 
 This is not recommended and may result in a number of issues with Python dependencies, paths, and venv mishaps. 
 
@@ -135,7 +152,7 @@ Unicor can reprocess and re-correlated JSON input as new MISP events are added.
   2. Add another CRON to run retro-searches on a schedule, for example in `/etc/crontab`:
 
   ```
-    * * * * * unicor ([ $(awk '{print $1}' /proc/loadavg) \< 0.5 ] && unicor correlate --retro_disco_lookup /var/unicor/archive/) >> /var/log/unicor-retro.log  2>&1
+    * * * * * unicor ([ $(awk '{print $1}' /proc/loadavg) \< 0.5 ] && unicor correlate c /var/unicor/archive/) >> /var/log/unicor-retro.log  2>&1
   ```
 
 The main use case here is `dnstap` data process with [DNS-collector](https://github.com/dmachard/DNS-collector), where a dedicated `pipelines`
@@ -158,10 +175,8 @@ Please refer to the [DNS-collector](https://github.com/dmachard/DNS-collector) c
 
 ### 3. Adding supported sources
 
-#### dnstap and [DNS-collector](https://github.com/dmachard/DNS-collector)
-
 <a name="unicor-json-schema"></a>
-#### input Unicor JSON 
+#### 3.1 input Unicor JSON 
 
 Any data following the Unicor JSON schema can be added as a source.
 
@@ -183,7 +198,7 @@ Unicor JSON schema, originally in ONE LINE, but made prettier below:
   }
   ```
 
-#### input Unicor JSON examples
+#### 3.2 input Unicor JSON examples
 
 In Zeek, `${alert}` could be: `"id.orig_h:id.orig_p -> id.resp_h:id.resp_p (seen.where)"`
 Example:
@@ -206,7 +221,9 @@ For netflows, a valid input could be:
    "url": "https://security-dashboard.uni.edu",
   }
   ```
+#### 3.4 dnstap and [DNS-collector](https://github.com/dmachard/DNS-collector)
 
+This is a primary use case for Unicor. 
 
 
 
