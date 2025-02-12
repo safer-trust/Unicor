@@ -89,11 +89,12 @@ This is not recommended and may result in a number of issues with Python depende
 
 ```
 git clone https://github.com/safer-trust/unicor.git
-cd unicor/src/
-
-
-sudo mv ./dist/unicor /usr/local/bin/
+cd unicor/
+python3 -m ./unicor
 ```
+
+For compatibility with the rest of this guide, it is necessary to create a script executing `python3 -m ./unicor`, available in $PATH.
+For example, a Bash or Python script in `/usr/local/bin/unicor`.
 
 ### 2. Configuring Unicor
 
