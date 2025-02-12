@@ -9,7 +9,7 @@
 
 Sources include `dnstap` with [DNS-collector](https://github.com/dmachard/DNS-collector) or any JSON source in the [Unicor schema](#unicor-json-schema) and include Zeek, Netflow alerts and more.
 
-Unicor does retro-searches too, it will go back to previously ingested data and attempt to match it again against more recently added MISP events.
+Unicor does retro-searches too, it can go back to older data and attempt to match it again against more recently added MISP events.
 
 Unicor is the successor of [pDNSSOC](https://github.com/safer-trust/pdnssoc-cli), and is proudly supported by [SAFER](https://safer-trust.org) members.
 
