@@ -28,7 +28,7 @@ def if_alert_exists(alerts_database, alert):
         hashes = set(file.read().splitlines())
     return alert in hashes
 
-@click.command(help="Raise alerts for spotted incidents")
+@click.command(help="Send alerts to pre-defined destinations like Slack")
 @click.argument(
     'files',
     nargs=-1,
