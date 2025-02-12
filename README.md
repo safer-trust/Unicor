@@ -24,7 +24,7 @@ Options:
   --help             Show this message and exit.
 
 Commands:
-  fetch-iocs  Fetch IOCs from MISP, typically domains and IPs
+  fetch-iocs                      Fetch IOCs from MISP, typically domains and IPs
   correlate                       Correlate input files and produce matches for potential alerts
   correlate --retro_disco_lookup  Reprocesses input in the list of newer MISP events
   alert                           Send alerts to a pre-defined location
@@ -225,6 +225,7 @@ For netflows, a valid input could be:
 
 This is a primary use case for Unicor. 
 
+To configure [DNS-collector](https://github.com/dmachard/DNS-collector) as a source for Unicor, follow [this detailed configuration](dns-collector-configuration.md).
 
 
 
