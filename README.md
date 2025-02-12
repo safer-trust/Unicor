@@ -18,9 +18,9 @@ Unicor is the successor of [pDNSSOC](https://github.com/safer-trust/pdnssoc-cli)
 A complete Unicor installation only requires:
   1. Access to a MISP instance (URL + API key are required)
   2. A source of data, for example:
-    - `dnstap` files (typically rsync'ed via SSH) and a local [DNS-collector](https://github.com/dmachard/DNS-collector)
-    - Any source (Zeek, etc.) producing files in the [Unicor JSON schema](#unicor-json-schema)
-  3. A destination for alerts: Webhooks like Slack are highly recommended, or email (deprecated)
+  - `dnstap` files (typically rsync'ed via SSH) and a local [DNS-collector](https://github.com/dmachard/DNS-collector)
+  - Any source (Zeek, etc.) producing files in the [Unicor JSON schema](#unicor-json-schema)
+  4. A destination for alerts: Webhooks like Slack are highly recommended, or email (deprecated)
 
 The installation guide will focus first on deploying and configuring Unicor, then provide configuration examples for different input sources.
 
