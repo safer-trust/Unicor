@@ -27,7 +27,7 @@ Commands:
   fetch-iocs                      Fetch IOCs from MISP, typically domains and IPs
   correlate                       Correlate input files and produce matches for potential alerts
   correlate --retro_disco_lookup  Reprocesses input in the list of newer MISP events
-  alert                           Send alerts to a pre-defined location
+  alert                           Send alerts to pre-defined destinations like Slack
 ```
 
 ## Installation summary
