@@ -3,11 +3,11 @@ import traceback
 from datetime import timedelta
 from datetime import datetime
 import ipaddress
-from unicorcli.subcommands.utils import make_sync
-from unicorcli.utils import file as unicor_file_utils
-from unicorcli.utils import time as unicor_time_utils
-from unicorcli.utils import correlation as unicor_correlation_utils
-from unicorcli.utils import enrichment as unicor_enrichment_utils
+from subcommands.utils import make_sync
+from utils import file as unicor_file_utils
+from utils import time as unicor_time_utils
+from utils import correlation as unicor_correlation_utils
+from utils import enrichment as unicor_enrichment_utils
 import logging
 import jsonlines
 from pymisp import PyMISP

@@ -10,8 +10,7 @@ import pytz
 from pathlib import Path
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-
-from unicorcli.utils.time import parse_rfc3339_ns
+from utils.time import parse_rfc3339_ns
 
 logger = logging.getLogger("unicorcli")
 

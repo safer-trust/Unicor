@@ -3,7 +3,7 @@ from datetime import timedelta, datetime
 import logging
 from pymisp import PyMISP
 from pathlib import Path
-from unicorcli.utils import file as unicor_file_utils
+from utils import file as unicor_file_utils
 
 logger = logging.getLogger(__name__)
 

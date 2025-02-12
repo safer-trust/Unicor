@@ -1,0 +1,6 @@
+setup.py
+src/unicor.egg-info/PKG-INFO
+src/unicor.egg-info/SOURCES.txt
+src/unicor.egg-info/dependency_links.txt
+src/unicor.egg-info/entry_points.txt
+src/unicor.egg-info/top_level.txt

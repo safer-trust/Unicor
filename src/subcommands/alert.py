@@ -1,10 +1,10 @@
 import click
 from datetime import datetime
 import ipaddress
-from unicorcli.subcommands.utils import make_sync
-from unicorcli.utils import file as unicor_file_utils
-from unicorcli.utils import time as unicor_time_utils
-from unicorcli.utils import alert as unicor_alerting_utils
+from subcommands.utils import make_sync
+from utils import file as unicor_file_utils
+from utils import time as unicor_time_utils
+from utils import alert as unicor_alerting_utils
 import logging
 import hashlib
 import jinja2

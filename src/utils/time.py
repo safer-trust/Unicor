@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 from pathlib import Path
-from unicorcli.utils.file import read_file
+from utils.file import read_file
 
 def parse_rfc3339_ns(timestamp):
     # Split the timestamp at the decimal point, if present

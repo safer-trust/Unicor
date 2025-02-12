@@ -3,10 +3,10 @@
 import click
 import logging
 import yaml
-from unicorcli.subcommands.fetch_iocs import fetch_iocs
-from unicorcli.subcommands.correlate import correlate
-from unicorcli.subcommands.alert import alert
-from unicorcli.subcommands.utils import make_sync
+from subcommands.fetch_iocs import fetch_iocs
+from subcommands.correlate import correlate
+from subcommands.alert import alert
+from subcommands.utils import make_sync
 
 
 logger = logging.getLogger("unicorcli")
@@ -30,7 +30,7 @@ def configure(ctx, param, filename):
 @click.option(
     '-c', '--config',
     type         = click.Path(dir_okay=False, file_okay=True),
-    default      = "/etc/unicorcli/unicorcli.yml",
+    default      = "/etc/unicor/config.yml",
     callback     = configure,
     is_eager     = True,
     expose_value = False,
