@@ -89,7 +89,13 @@ def slack_alerts(match, config, alert_pattern, alerts_database, alerts_database_
             msg += "UID: " + match['uid']
             
         dt = datetime.strptime(match['timestamp'][:26], "%Y-%m-%dT%H:%M:%S.%f")
-        msg += "*Detection* (" + dt.strftime("%Y-%m-%d %H:%M:%SZ") + "):\n"+ match['detection']
+
+        if match.get('url'):
+            msg += "[*Detection*](" + match['url'] + ")"
+        else:
+            msg += "*Detection*" 
+    
+        msg += " (" + dt.strftime("%Y-%m-%d %H:%M:%SZ") + "):\n"+ match['detection']
 
         logger.debug("MSG: {}".format(msg))
         if match.get('uid'):
