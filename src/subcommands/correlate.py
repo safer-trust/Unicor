@@ -218,7 +218,7 @@ def correlate(ctx,
                             continue
 
     if not len(total_matches):
-        logger.info("No dnscollector match found.")
+        logger.info("No MISP correlation found in the input.")
 
     # We have a list of matches, let's enrich them with MISP meta data
     #logger.debug("Enrich input: {}".format(total_matches))

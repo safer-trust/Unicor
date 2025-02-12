@@ -7,7 +7,6 @@ from cachetools.keys import hashkey
 import pytz
 
 logger = logging.getLogger("unicorcli")
-logging.basicConfig(level=logging.DEBUG)
 
 @cached(cache={}, key=lambda domain, domain_set: hashkey(domain))
 def correlate_domain(domain, domain_set):
@@ -30,6 +29,7 @@ def correlate_events(lines, shared_data):
     (domain_attributes, ip_attributes, domain_attributes_metadata, ip_attributes_metadata, is_minified) = shared_data
     total_matches = []
     ips = []
+    domain = ""
     for match in lines:
     # Extract the timestamp, domain and ips
         logger.debug("Parsing: {}".format(match))
@@ -82,19 +82,19 @@ def correlate_events(lines, shared_data):
                     logger.debug("Found an IOC domain: {}".format(match['ioc']))
                     domain = match['ioc']
                     match['type'] = "domain"
-
             try:
                 timestamp = unicor_time_utils.parse_rfc3339_ns(match['timestamp-rfc3339ns'])
             except ValueError:
                 logger.warning("Unable to digest timestamp: {}".format(match))
 
-        # Signal we have a new alert to send from one of the input files
-        if correlate_domain(domain, domain_attributes):
-            total_matches.append(match)
-       
-       
+        # Signal we have a new domain or IP alert to send from one of the input files
+                
+        if domain:
+            if correlate_domain(domain, domain_attributes):
+                total_matches.append(match) 
+
         for ip_structure in ips:
-            logger.debug("This is my IP: {}".format(ip_structure))
+            #logger.debug("This is my IP: {}".format(ip_structure))
             if correlate_ip(ip_structure, ip_attributes):
                 if ip_attributes_metadata: # retro mode
                     total_matches.append(match)

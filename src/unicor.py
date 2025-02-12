@@ -10,6 +10,7 @@ from subcommands.utils import make_sync
 
 
 logger = logging.getLogger("unicorcli")
+logging.basicConfig(level=logging.DEBUG)
 
 def configure(ctx, param, filename):
     # Parse config file
