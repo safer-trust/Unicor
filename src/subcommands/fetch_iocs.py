@@ -7,7 +7,7 @@ from utils import file as unicor_file_utils
 
 logger = logging.getLogger(__name__)
 
-@click.command(help="Fetch IOCs from intelligence sources")
+@click.command(help="Fetch IOCs from MISP, typically domains and IPs")
 @click.option(
     'logging_level',
     '--logging',
