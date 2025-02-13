@@ -81,20 +81,25 @@ A ELF 64-bit dynamically linked version is also directly available in the [dist 
 Move the binary in one of the executable PATH, for example:
 
   ```sh
-  sudo mv ./dist/unicor /usr/local/bin/
+  sudo cp ./dist/unicor /usr/local/bin/
   ```
 #### 1.2 Repo installation
 
-This is not recommended and may result in a number of issues with Python dependencies, paths, and venv mishaps. 
+This is not recommended and may result in a number of issues with Python dependencies, paths, or venv mishaps, and cause personal injury or illness.
 
 ```
 git clone https://github.com/safer-trust/unicor.git
 cd unicor/
-python3 -m ./unicor
+pip install -r requirements.txt
+python3 -m unicor
 ```
 
-For compatibility with the rest of this guide, it is necessary to create a script executing `python3 -m ./unicor`, available in $PATH.
-For example, a Bash or Python script in `/usr/local/bin/unicor`.
+For compatibility with the rest of this guide, it is also necessary to create a script executing `python3 -m unicor`, available in $PATH.
+For example, a Bash or Python script in `/usr/local/bin/unicor`:
+
+```
+sudo bash -c 'echo -e "#!/bin/bash\npython3 -m unicor \"\$@\"" > /usr/local/bin/unicor && chmod +x /usr/local/bin/unicor'
+```
 
 ### 2. Configuring Unicor
 
