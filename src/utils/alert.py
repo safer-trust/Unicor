@@ -36,90 +36,90 @@ def register_new_alert(alerts_database, alerts_database_max_size, alert):
             return True
       return False
     except IOError as e:
-        logger.warn("Error accessing file {}: {}".format(filename. e))
+        logger.warning("Error accessing file {}: {}".format(filename. e))
         return False
     return False
 
 
-def slack_alerts(match, config, alert_pattern, alerts_database, alerts_database_max_size):
-#    logger.warn("Slack hook {}".format(config['slack_hook']))
+def slack_alerts(match, config, alert_pattern, alerts_database, alerts_database_max_size, alert_type):
+    #logger.debug("Slack hook {}".format(config['slack_hook']))
 
-        msg = ""
-        # Parsing MISP event(s) associate with the IOC
-        misp_events = ""
-        misp_tags = ""
-        misp_ioc = ""
-        misp_ioc_addition = ""
-        
-        if 'correlation' in match and 'misp' in match['correlation'] and 'events' in match['correlation']['misp']:
-            events = match['correlation']['misp']['events']
-            if events:
-                for event in events:
-                    misp_events += "[" + event.get('organization') + "] "
-                    misp_events += "<" + event.get('event_url') + "|" + event.get('info')  + ">\n"
-
-                    
-                    # Extract the 3 first tags of each event associated with the IOC
-                    tags = event.get('tags', [])
-                    for tag in tags[:3]:
-                        misp_tags += tag['name'].replace('"', '\\"') + ", "  
-
-                # formatting the collected data
-
-                if misp_tags.endswith(", "):
-                    misp_tags = misp_tags[:-2]        
-
-                misp_ioc += "`" + event.get('ioc').replace('.', '[.]') + "` (" + event.get('ioc_type') + ")\n"
-                misp_ioc_addition += "- *MISP IOC date*: " + event.get('publication') + "\n"
-                if event.get('comment'):
-                    misp_ioc_addition += "- *MISP IOC Comment*: " + event.get('comment') + "\n"
-            else:
-                misp_events = "[No MISP event found]\n"
-        else:
-            logger.warning("No correlation data found for {}".format(alert_pattern))
-
-
-        # Assembling our Slack message
-        msg += misp_events
-        if misp_tags:
-            msg += "*tags*: \"" + misp_tags + "\"\n"
-        msg += "- *IOC*: `" + match['ioc'] + "`\n"
-        msg += misp_ioc_addition
-        if match.get('uid'):
-            msg += "UID: " + match['uid']
-            
-        dt = datetime.strptime(match['timestamp'][:26], "%Y-%m-%dT%H:%M:%S.%f")
-
-        if match.get('url'):
-            msg += "[*Detection*](" + match['url'] + ")"
-        else:
-            msg += "*Detection*" 
+    msg = ""
+    # Parsing MISP event(s) associate with the IOC
+    misp_events = ""
+    misp_tags = ""
+    misp_ioc = ""
+    misp_ioc_addition = ""
     
-        msg += " (" + dt.strftime("%Y-%m-%d %H:%M:%SZ") + "):\n"+ match['detection']
+    if 'correlation' in match and 'misp' in match['correlation'] and 'events' in match['correlation']['misp']:
+        events = match['correlation']['misp']['events']
+        if events:
+            for event in events:
+                misp_events += "[" + event.get('organization') + "] "
+                misp_events += "<" + event.get('event_url') + "|" + event.get('info')  + ">\n"
 
-        logger.debug("MSG: {}".format(msg))
-        if match.get('uid'):
-            logger.info("Alerting about: {}: {} ".format(match['uid']), match['detection'])
+                
+                # Extract the 3 first tags of each event associated with the IOC
+                tags = event.get('tags', [])
+                for tag in tags[:3]:
+                    misp_tags += tag['name'].replace('"', '\\"') + ", "  
+
+            # formatting the collected data
+
+            if misp_tags.endswith(", "):
+                misp_tags = misp_tags[:-2]        
+
+            misp_ioc += "`" + event.get('ioc').replace('.', '[.]') + "` (" + event.get('ioc_type') + ")\n"
+            misp_ioc_addition += "- *MISP IOC date*: " + event.get('publication') + "\n"
+            if event.get('comment'):
+                misp_ioc_addition += "- *MISP IOC Comment*: " + event.get('comment') + "\n"
         else:
-            logger.info("Alerting about: {} ".format( match['detection'])) 
-        # SENDING!
-
-        payload = {"text": f":unicorn_face: [Unicor]: {msg}"}
-        headers = {"Content-type": "application/json"}
+            misp_events = "[No MISP event found]\n"
+    else:
+        logger.warning("No correlation data found for {}".format(alert_pattern))
 
 
-        try:
-            response = requests.post(config['slack_hook'], headers=headers, json=payload)
-            logger.debug("Slack: {} - {}".format(response.status_code, response.text))
-            response.raise_for_status()  # This will raise an HTTPError if the response was an HTTP error
+    # Assembling our Slack message
+    msg += misp_events
+    if misp_tags:
+        msg += "*tags*: \"" + misp_tags + "\"\n"
+    msg += "- *IOC*: `" + match['ioc'] + "`\n"
+    msg += misp_ioc_addition
+    if match.get('uid'):
+        msg += "UID: " + match['uid']
+        
+    dt = datetime.strptime(match['timestamp'][:26], "%Y-%m-%dT%H:%M:%S.%f")
+
+    if match.get('url'):
+        msg += "[*Detection*](" + match['url'] + ")"
+    else:
+        msg += "*Detection*" 
+
+    msg += " (" + dt.strftime("%Y-%m-%d %H:%M:%SZ") + "):\n"+ match['detection']
+
+    logger.debug("MSG: {}".format(msg))
+    if match.get('uid'):
+        logger.info("Alerting about: {}: {} ".format(match['uid']), match['detection'])
+    else:
+        logger.info("Alerting about: {} ".format( match['detection'])) 
+    # SENDING!
+
+    payload = {"text": f"🦄 [Unicor]: {msg}"}
+    headers = {"Content-type": "application/json"}
+
+    try:
+        
+        response = requests.post(config['slack_hook'], headers=headers, json=payload)
+        logger.debug("Slack: {} - {}".format(response.status_code, response.text))
+        response.raise_for_status()  # This will raise an HTTPError if the response was an HTTP error
 
 
-            # If the request worked, then register the alert in our "database" to avoir duplicate alerts
-            register_new_alert(alerts_database, alerts_database_max_size, alert_pattern)
+        # If the request worked, then register the alert in our "database" to avoir duplicate alerts
+        register_new_alert(alerts_database, alerts_database_max_size, alert_pattern)
 
 
-        except requests.exceptions.RequestException as e:
-            logger.warning("Slack post failed: {}".format(e))
+    except requests.exceptions.RequestException as e:
+        logger.warning("Slack post failed: {}".format(e))
 
 def email_alerts(alerts, config, summary = False):
 
