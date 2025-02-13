@@ -59,13 +59,16 @@ def correlate_events(lines, shared_data):
         # Triaging generic input. Assuming it can only be an IP or a domain?
         else:
             logger.debug("Generic mode!")
+            if match.get('ioc_type') not in {"domain", "ip"}: # We only support IP or domains for now
+                match['ioc_type'] = None 
             # Use the ioc_type if we have one
             if match.get('ioc_type'):
-                logger.debug("{} already casted as {}".format(match['ioc'], match['type']))
+                logger.debug("{} already casted as {}".format(match['ioc'], match['ioc_type']))
                 if match.get('ioc_type') == "ip":
                     ips = [{'rdata': match['ioc'], 'rdatatype': "A"}]
                 if match.get('ioc_type') == "domain":    
                     domain = match['ioc']
+                
             # We have no ioc_type, let's guess
             else:
                 # Check if 'ioc' looks like an IP. If not, it must be a domain, right?
