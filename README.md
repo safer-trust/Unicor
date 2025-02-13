@@ -201,7 +201,8 @@ Unicor JSON schema, originally in ONE LINE, but made prettier below:
 
 #### 3.2 input Unicor JSON examples
 
-In Zeek, `${alert}` could be: `"id.orig_h:id.orig_p -> id.resp_h:id.resp_p (seen.where)"`
+With Zeek, it is recommended to use the [MISP intel policy](https://github.com/initconf/misp_intel).
+Then in Unicor, `${alert}` could be: `"id.orig_h:id.orig_p -> id.resp_h:id.resp_p (seen.where)"`
 Example:
   ```
   {
