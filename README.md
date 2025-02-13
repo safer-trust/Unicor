@@ -107,14 +107,14 @@ sudo bash -c 'echo -e "#!/bin/bash\npython3 -m unicor \"\$@\"" > /usr/local/bin/
 
 Create the relevant user, files and directories, and assign permissions:
 
-    ```sh
-    sudo useradd --system --no-create-home --shell /usr/sbin/nologin unicor
-    mkdir -p /var/unicor /var/dnscollector/alerts /var/unicor/queries /var/unicor/matches
-    touch /var/unicor/alerts/matches.json /var/unicor/misp_ips.txt /var/unicor/misp_domains.txt /var/unicor/queries/queries.json /var/unicor/alerts_db.txt /var/unicor/matches/matches_domains.json /var/unicor/matches/matches_ips.json
-    chown -R unicor:unicor /var/unicor/
-    chmod -R u+rw /var/unicor/
-    sudo mkdir /etc/unicor
-    ```
+  ```sh
+  sudo useradd --system --no-create-home --shell /usr/sbin/nologin unicor
+  mkdir -p /var/unicor /var/dnscollector/alerts /var/unicor/queries /var/unicor/matches
+  touch /var/unicor/alerts/matches.json /var/unicor/misp_ips.txt /var/unicor/misp_domains.txt /var/unicor/queries/queries.json /var/unicor/alerts_db.txt /var/unicor/matches/matches_domains.json /var/unicor/matches/matches_ips.json
+  chown -R unicor:unicor /var/unicor/
+  chmod -R u+rw /var/unicor/
+  sudo mkdir /etc/unicor
+  ```
 
 #### 2.2 Configuration file & CRON
 
