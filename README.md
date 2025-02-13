@@ -1,7 +1,7 @@
 # Unicor
 
 <picture>
-  <img src="unicor.png" alt="Unicor logo" width="30%" align="right">
+  <img src="unicor.png" alt="Unicor logo" width="35%" align="right">
 </picture>
 
 
