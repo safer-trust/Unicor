@@ -30,7 +30,8 @@ alerting:
   # At least one of the following needs to be enabled. Slack is the prefered choice.
   slack: 
      slack_hook: "https://hooks.slack.com/services/..." # <-- You MUST ADD YOUR OWN WEBHOOK
-     
+
+# Note: Google Chat works just like Slack. Just add a Google Chat Webhook URL in the "slack_hook" above
 #  email:
 #    from: "security@your_org.net"
 #    subject: "[Unicor] your_org DNS alert"
