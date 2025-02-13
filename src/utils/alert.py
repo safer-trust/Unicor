@@ -1,6 +1,7 @@
 import os
 import socket
 import json
+import re
 import logging
 import smtplib
 import requests
@@ -83,7 +84,8 @@ def slack_alerts(match, config, alert_pattern, alerts_database, alerts_database_
     msg += misp_events
     if misp_tags:
         msg += "*tags*: \"" + misp_tags + "\"\n"
-    msg += "- *IOC*: `" + match['ioc'] + "`\n"
+    
+    msg += "- *IOC*: `" + match.get('ioc').replace('.', '[.]') + "`\n"
     msg += misp_ioc_addition
     if match.get('uid'):
         msg += "UID: " + match['uid']

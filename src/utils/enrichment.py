@@ -96,14 +96,15 @@ def enrich_logs(logs, misp_connections, is_minified):
             ioc = log['ioc']
             if log.get('ioc_type') == "domain":
                 domain = log['ioc']
-            if log.get('ioc_type') == "dns":
-                ips = log['ioc']
+            if log.get('ioc_type') == "ip":
+                ips.append(log['ioc'])
 
-    # Now we know what domains and/or IPs we need to look up in MISP
+         # Now we know what domains and/or IPs we need to look up in MISP
         misp_events = []
-        encountered_events = set()
+        encountered_events = set() 
         for misp_connection, args in misp_connections:
             if domain:
+                logger.debug("MISP: looking for domain='{}'".format(domain)) 
                 # Search for domain
                 r = query_misp(misp_connection, args, domain, ['domain', 'domain|ip', 'hostname', 'hostname|port'])
 
@@ -131,6 +132,7 @@ def enrich_logs(logs, misp_connections, is_minified):
                     
                 if ip:
                     # We have an actual IP, let's dig it up in MISP
+                    logger.debug("MISP: looking for IP='{}'".format(ip))
                     r = query_misp(
                         misp_connection,
                         args,
