@@ -177,7 +177,7 @@ Please refer to the [DNS-collector](https://github.com/dmachard/DNS-collector) c
 ### 3. Adding supported sources
 
 <a name="unicor-json-schema"></a>
-#### 3.1 input Unicor JSON 
+#### 3.1 JSON input
 
 Any data following the Unicor JSON schema can be added as a source.
 
@@ -199,7 +199,7 @@ Unicor JSON schema, originally in ONE LINE, but made prettier below:
   }
   ```
 
-#### 3.2 input Unicor JSON examples
+#### 3.2 JSON input examples
 
 With Zeek, it is recommended to use the [MISP intel policy](https://github.com/initconf/misp_intel).
 Then in Unicor, `${alert}` could be: `"id.orig_h:id.orig_p -> id.resp_h:id.resp_p (seen.where)"`
