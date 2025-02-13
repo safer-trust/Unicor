@@ -158,7 +158,7 @@ Unicor can reprocess and re-correlated JSON input as new MISP events are added.
   2. Add another CRON to run retro-searches on a schedule, for example in `/etc/crontab`:
 
   ```
-    * * * * * unicor ([ $(awk '{print $1}' /proc/loadavg) \< 0.5 ] && unicor correlate c /var/unicor/archive/) >> /var/log/unicor-retro.log  2>&1
+    * * * * * unicor ([ $(awk '{print $1}' /proc/loadavg) \< 0.5 ] && unicor correlate /var/unicor/archive/) >> /var/log/unicor-retro.log  2>&1
   ```
 
 The main use case here is `dnstap` data process with [DNS-collector](https://github.com/dmachard/DNS-collector), where a dedicated `pipelines`
