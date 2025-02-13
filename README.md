@@ -191,8 +191,8 @@ Unicor JSON schema, originally in ONE LINE, but made prettier below:
   ```
   {
    "ioc": "${domain or ip}",  // domain or IP address
-   "type": "${type}", // Optional field expressing the type of IOC. Type can be "ip" or "domain"
-   "timestamp-rfc3339ns": "${time}", 
+   "ioc_type": "${ioc_type}", // Optional field expressing the type of IOC. ioc_type can be "ip" or "domain"
+   "timestamp_rfc3339ns": "${time}", 
    "detection": "${alert}", // Text or simple Markdown with the actual alert
    "uid": "${uid}", // Optional uid of the source event
    "url": "${url}", // Optional url of the source event
@@ -206,7 +206,7 @@ Example:
   ```
   {
    "ioc": "evil.top",
-   "timestamp-rfc3339ns": "2025-02-07T18:50:51.659830055Z",
+   "timestamp_rfc3339ns": "2025-02-07T18:50:51.659830055Z",
    "detection": "*Connection: `188[.]184[.]21[.]197:3245` -> `123[.]345[.]123[.]456` (X509::IN_CERT)",
    "uid": "Cm8QYURGEZkdmwMFi",
   }
@@ -216,8 +216,8 @@ For netflows, a valid input could be:
   ```
   {
    "ioc": "123[.]345[.]123[.]456",
-   "type": "ip",
-   "timestamp-rfc3339ns": "2025-02-09T11:50:11.659830055Z",
+   "ioc_type": "ip",
+   "timestamp_rfc3339ns": "2025-02-09T11:50:11.659830055Z",
    "detection": "*Connection: `188[.]184[.]21[.]197:3245` -> `123[.]345[.]123[.]456`\n*Bytes*: 4Kb sent, 1MB received",
    "url": "https://security-dashboard.uni.edu",
   }

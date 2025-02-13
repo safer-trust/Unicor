@@ -69,7 +69,7 @@ def enrich_logs(logs, misp_connections, is_minified):
         # Triage the IOC type, between dnstap, domain or IP
         
         # dnstap data format
-        if log.get('type') == "dns":
+        if log.get('ioc_type') == "dns":
             if is_minified:
                 domain = log['query']
                 ips = log['answers']
@@ -91,12 +91,12 @@ def enrich_logs(logs, misp_connections, is_minified):
 
         # Generic mode
         else:
-            timestamp = log['timestamp-rfc3339ns']
+            timestamp = log['timestamp_rfc3339ns']
             detection = log['detection']
             ioc = log['ioc']
-            if log.get('type') == "domain":
+            if log.get('ioc_type') == "domain":
                 domain = log['ioc']
-            if log.get('type') == "dns":
+            if log.get('ioc_type') == "dns":
                 ips = log['ioc']
 
     # Now we know what domains and/or IPs we need to look up in MISP

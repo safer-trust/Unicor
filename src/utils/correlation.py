@@ -37,7 +37,7 @@ def correlate_events(lines, shared_data):
         # Testing if input is pdns. If so, input can be a domain, an array of IPs, or both
         if match.get('dns', {}).get('id'):
             logger.debug("DNS mode")
-            match['type'] = "dns"
+            match['ioc_type'] = "dns"
             if is_minified:
                 timestamp = unicor_time_utils.parse_rfc3339_ns(match['timestamp'])
                 try:
@@ -59,14 +59,14 @@ def correlate_events(lines, shared_data):
         # Triaging generic input. Assuming it can only be an IP or a domain?
         else:
             logger.debug("Generic mode!")
-            # Use the type if we have one
-            if match.get('type'):
+            # Use the ioc_type if we have one
+            if match.get('ioc_type'):
                 logger.debug("{} already casted as {}".format(match['ioc'], match['type']))
-                if match.get('type') == "ip":
+                if match.get('ioc_type') == "ip":
                     ips = [{'rdata': match['ioc'], 'rdatatype': "A"}]
-                if match.get('type') == "domain":    
+                if match.get('ioc_type') == "domain":    
                     domain = match['ioc']
-            # We have no type, let's guess
+            # We have no ioc_type, let's guess
             else:
                 # Check if 'ioc' looks like an IP. If not, it must be a domain, right?
                 try:
@@ -77,13 +77,13 @@ def correlate_events(lines, shared_data):
                     else:
                         rdatatype = "AAAA"
                     ips = [{'rdata': match['ioc'], 'rdatatype': rdatatype}]
-                    match['type'] = "ip"
+                    match['ioc_type'] = "ip"
                 except ValueError:
                     logger.debug("Found an IOC domain: {}".format(match['ioc']))
                     domain = match['ioc']
-                    match['type'] = "domain"
+                    match['ioc_type'] = "domain"
             try:
-                timestamp = unicor_time_utils.parse_rfc3339_ns(match['timestamp-rfc3339ns'])
+                timestamp = unicor_time_utils.parse_rfc3339_ns(match['timestamp_rfc3339ns'])
             except ValueError:
                 logger.warning("Unable to digest timestamp: {}".format(match))
 
