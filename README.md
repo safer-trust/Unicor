@@ -166,7 +166,7 @@ to archive all DNS queries has previously been added as follows:
   ```
    - name: fileall
      logfile:
-          file-path: /var/dnscollector/queries/queries.json
+          file-path: /var/unicor/archive/queries.json
           mode: json
           flush-interval: 1
           # Tune the size and number of files used for retro searches here:
