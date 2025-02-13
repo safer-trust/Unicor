@@ -31,12 +31,12 @@ def register_new_alert(alerts_database, alerts_database_max_size, alert):
                 file.write('\n'.join(hashes) + '\n')
                 return True
             except IOError as e:
-                logger.warn("Error writing to {}: {}".format(filename. e))
+                logger.warning("Error writing to {}: {}".format(alerts_database.e))
                 return False
             return True
       return False
     except IOError as e:
-        logger.warning("Error accessing file {}: {}".format(filename. e))
+        logger.warning("Error accessing file {}: {}".format(alerts_database.e))
         return False
     return False
 
