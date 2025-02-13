@@ -153,9 +153,10 @@ Create the relevant user, files and directories, and assign permissions:
 
 - Optional: Enable retro-searches
 
-Unicor can reprocess and re-correlated JSON input as new MISP events are added.
-  1. Create a dedicated directory to add JSON files, for example: `/var/unicor/archive/`
-  2. Add another CRON to run retro-searches on a schedule, for example in `/etc/crontab`:
+Unicor can reprocess and re-correlate JSON input as new MISP events are added.
+  1. Create a dedicated directory owned by the `unicor` user to add JSON files.
+  For example: `mkdir /var/unicor/archive/ && chownchown -R unicor:unicor /var/unicor/archive/`
+  4. Add another CRON to run retro-searches on a schedule, for example in `/etc/crontab`:
 
   ```
     * * * * * unicor ([ $(awk '{print $1}' /proc/loadavg) \< 0.5 ] && unicor correlate /var/unicor/archive/) >> /var/log/unicor-retro.log  2>&1
