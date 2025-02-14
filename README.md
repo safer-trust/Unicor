@@ -68,8 +68,10 @@ It is recommended to compile it on the local system from the repository as follo
 ```
 pip install pyinstaller
 git clone https://github.com/safer-trust/unicor.git
-cd unicor/src/
-pyinstaller  --add-binary="/usr/local/lib/python3.9/dist-packages/pymisp:pymisp" -F  unicor.py
+cd unicor/
+pip install -r requirements.txt
+src/
+pyinstaller -F  unicor.py
 ```
 Then the binary will be readily available:
 ```
@@ -87,6 +89,12 @@ Commands:
   fetch-iocs  Fetch IOCs from intelligence sources
 ```
 A ELF 64-bit dynamically linked version is also directly available in the [dist directory](https://github.com/safer-trust/unicor/tree/main/src/dist) of the repository.
+
+On some systems, it is necessary to specify the path of specific missing modules:
+```
+pyinstaller  --add-binary="/usr/local/lib/python3.9/dist-packages/pymisp:pymisp" -F  unicor.py
+```
+
 
 Move the binary in one of the executable PATH, for example:
 
