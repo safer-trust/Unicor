@@ -58,7 +58,7 @@ The recommended installation path is to use a binary form of Unicor, produced by
 The easiest way to get a binary x86_64 Unicor is:
 
  ```sh
- sudo curl -o /usr/local/bin/unicor https://github.com/safer-trust/Unicor/raw/refs/heads/main/src/dist/unicor
+ sudo curl -Lo /usr/local/bin/unicor https://github.com/safer-trust/Unicor/raw/refs/heads/main/src/dist/unicor
  chmod +x /usr/local/bin/unicor
  ```
 
@@ -68,8 +68,10 @@ It is recommended to compile it on the local system from the repository as follo
 ```
 pip install pyinstaller
 git clone https://github.com/safer-trust/unicor.git
-cd unicor/src/
-pyinstaller  --add-binary="/usr/local/lib/python3.9/dist-packages/pymisp:pymisp" -F  unicor.py
+cd unicor/
+pip install -r requirements.txt
+src/
+pyinstaller -F  unicor.py
 ```
 Then the binary will be readily available:
 ```
@@ -87,6 +89,12 @@ Commands:
   fetch-iocs  Fetch IOCs from intelligence sources
 ```
 A ELF 64-bit dynamically linked version is also directly available in the [dist directory](https://github.com/safer-trust/unicor/tree/main/src/dist) of the repository.
+
+On some systems, it is necessary to specify the path of specific missing modules:
+```
+pyinstaller  --add-binary="/usr/local/lib/python3.9/dist-packages/pymisp:pymisp" -F  unicor.py
+```
+
 
 Move the binary in one of the executable PATH, for example:
 
@@ -134,7 +142,7 @@ Create the relevant user, files and directories, and assign permissions:
 
    ```sh
    mkdir -p /etc/unicor/
-   curl -o /etc/unicor/config.yml https://raw.githubusercontent.com/safer-trust/unicor/refs/heads/main/config/config.yml
+   curl -Lo /etc/unicor/config.yml https://raw.githubusercontent.com/safer-trust/unicor/refs/heads/main/config/config.yml
    chown -R unicor:unicor /etc/unicor
    ```
 
@@ -156,6 +164,12 @@ Create the relevant user, files and directories, and assign permissions:
   # sudo -u unicor unicor correlate
   # sudo -u unicor unicor alert
   ```
+- Using self-signed certificates or other CA Bundles
+In case it is imperative to use a self-signed certificate with MISP, or an alternative CA bundle, for example for testing, it is possible to pass on a path to the certificate and maintain a TLS connection:
+
+```
+CURL_CA_BUNDLE=/var/containers/misp-jisc/persistent/misp/tls/misp.crt  unicor fetch-iocs
+```
 
 - Add a CRON to run Unicor on a schedule, for example in `/etc/crontab`:
 

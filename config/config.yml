@@ -1,6 +1,6 @@
 logging_level: "INFO" # INFO is recommended
 misp_servers:
- - domain: "http://misp-demo.es.net/" # <-- You MUST ADD YOUR OWN MISP URL HERE
+ - domain: "https://misp-demo.es.net/" # <-- You MUST ADD YOUR OWN MISP URL HERE
    api_key: "My_MISP_API_key" # <-- You MUST ADD YOUR OWN MISP API KEY HERE
    verify_ssl: True # Switch to false to debug, stick to True in production
    debug: False 
