@@ -222,18 +222,20 @@ def correlate(ctx,
 
     # We have a list of matches, let's enrich them with MISP meta data
     #logger.debug("Enrich input: {}".format(total_matches))
-    enriched = unicor_enrichment_utils.enrich_logs(total_matches, misp_connections, False)
-    enriched_minified = unicor_enrichment_utils.enrich_logs(total_matches_minified, misp_connections, True)
+
+        # This part is now indented to NOT alert if the ioc is not in MISP
+        enriched = unicor_enrichment_utils.enrich_logs(total_matches, misp_connections, False)
+        enriched_minified = unicor_enrichment_utils.enrich_logs(total_matches_minified, misp_connections, True)
 
 
-    #logger.debug("Enriched output: {}{}".format(enriched,enriched_minified))
-    # Output to directory
-    # Write full enriched matches to matches.json
+        #logger.debug("Enriched output: {}{}".format(enriched,enriched_minified))
+        # Output to directory
+        # Write full enriched matches to matches.json
 
-    to_output = enriched + enriched_minified
-    to_output = sorted(to_output, key=lambda d: d['timestamp'])
+        to_output = enriched + enriched_minified
+        to_output = sorted(to_output, key=lambda d: d['timestamp'])
 
-    with jsonlines.open(Path(correlation_config['output_dir'], "matches.json"), mode='a') as writer:
-        for document in to_output:
-            writer.write(document)
+        with jsonlines.open(Path(correlation_config['output_dir'], "matches.json"), mode='a') as writer:
+            for document in to_output:
+                writer.write(document)
 
