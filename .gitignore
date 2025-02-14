@@ -9,13 +9,13 @@ __pycache__/
 bin/
 build/
 develop-eggs/
-dist/
 eggs/
 lib/
 lib64/
 parts/
 sdist/
 var/
+src/build/
 *.egg-info/
 .installed.cfg
 *.egg
