@@ -109,7 +109,7 @@ Create the relevant user, files and directories, and assign permissions:
 
   ```sh
   sudo useradd --system --no-create-home --shell /usr/sbin/nologin unicor
-  mkdir -p /var/unicor /var/dnscollector/alerts /var/unicor/queries /var/unicor/matches
+  mkdir -p /var/unicor /var/unicor/alerts /var/unicor/queries /var/unicor/matches
   touch /var/unicor/alerts/matches.json /var/unicor/misp_ips.txt /var/unicor/misp_domains.txt /var/unicor/queries/queries.json /var/unicor/alerts_db.txt /var/unicor/matches/matches_domains.json /var/unicor/matches/matches_ips.json
   chown -R unicor:unicor /var/unicor/
   chmod -R u+rw /var/unicor/
@@ -118,10 +118,11 @@ Create the relevant user, files and directories, and assign permissions:
 
 #### 2.2 Configuration file & CRON
 
-- Create the Unicor configuration file (`config.yml`) under `/etc/unicor/`, based on the [Unicor template]([https://github.com/safer-trust/pdnssoc-cli/blob/main/config/pdnssoccli.yml](https://github.com/safer-trust/unicor/blob/main/config/config.yml).
+- Create the Unicor configuration file (`config.yml`) under `/etc/unicor/`, based on the [Unicor template](https://raw.githubusercontent.com/safer-trust/unicor/refs/heads/main/config/config.yml](https://raw.githubusercontent.com/safer-trust/unicor/refs/heads/main/config/config.yml).
 
    ```sh
-   curl -o /etc/unicor/config.yml https://raw.githubusercontent.com/safer-trust/pdnssoc-cli/refs/heads/main/config/pdnssoccli.yml
+   mkdir -p /etc/unicor/
+   curl -o /etc/unicor/config.yml https://raw.githubusercontent.com/safer-trust/unicor/refs/heads/main/config/config.yml
    chown -R unicor:unicor /etc/unicor
    ```
 
