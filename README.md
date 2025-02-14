@@ -55,8 +55,18 @@ An example `dnstap` alert in Slack:
 #### 1.1 Binary installation
 The recommended installation path is to use a binary form of Unicor, produced by PyInstaller.
 
+The easiest way to get a binary x86_64 Unicor is:
+
+ ```sh
+ sudo curl -o /usr/local/bin/unicor https://github.com/safer-trust/Unicor/raw/refs/heads/main/src/dist/unicor
+ chmod +x /usr/local/bin/unicor
+ ```
+
+It is recommended to compile it on the local system from the repository as follows.
+
 (It may be necessary to install dependencies and specifically reference PyMISP)
 ```
+pip install pyinstaller
 git clone https://github.com/safer-trust/unicor.git
 cd unicor/src/
 pyinstaller  --add-binary="/usr/local/lib/python3.9/dist-packages/pymisp:pymisp" -F  unicor.py
@@ -80,9 +90,11 @@ A ELF 64-bit dynamically linked version is also directly available in the [dist 
 
 Move the binary in one of the executable PATH, for example:
 
-  ```sh
-  sudo cp ./dist/unicor /usr/local/bin/
-  ```
+```sh
+sudo cp ./dist/unicor /usr/local/bin/
+```
+
+
 #### 1.2 Repo installation
 
 This is not recommended and may result in a number of issues with Python dependencies, paths, or venv mishaps, and cause personal injury or illness.
