@@ -58,7 +58,7 @@ The recommended installation path is to use a binary form of Unicor, produced by
 The easiest way to get a binary x86_64 Unicor is:
 
  ```sh
- sudo curl -o /usr/local/bin/unicor https://github.com/safer-trust/Unicor/raw/refs/heads/main/src/dist/unicor
+ sudo curl -Lo /usr/local/bin/unicor https://github.com/safer-trust/Unicor/raw/refs/heads/main/src/dist/unicor
  chmod +x /usr/local/bin/unicor
  ```
 
@@ -134,7 +134,7 @@ Create the relevant user, files and directories, and assign permissions:
 
    ```sh
    mkdir -p /etc/unicor/
-   curl -o /etc/unicor/config.yml https://raw.githubusercontent.com/safer-trust/unicor/refs/heads/main/config/config.yml
+   curl -Lo /etc/unicor/config.yml https://raw.githubusercontent.com/safer-trust/unicor/refs/heads/main/config/config.yml
    chown -R unicor:unicor /etc/unicor
    ```
 
