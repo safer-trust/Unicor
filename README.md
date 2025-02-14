@@ -164,6 +164,12 @@ Create the relevant user, files and directories, and assign permissions:
   # sudo -u unicor unicor correlate
   # sudo -u unicor unicor alert
   ```
+- Using self-signed certificates or other CA Bundles
+In case it is imperative to use a self-signed certificate with MISP, or an alternative CA bundle, for example for testing, it is possible to pass on a path to the certificate and maintain a TLS connection:
+
+```
+CURL_CA_BUNDLE=/var/containers/misp-jisc/persistent/misp/tls/misp.crt  unicor fetch-iocs
+```
 
 - Add a CRON to run Unicor on a schedule, for example in `/etc/crontab`:
 
