@@ -222,7 +222,7 @@ def correlate(ctx,
 
     # We have a list of matches, let's enrich them with MISP meta data
     #logger.debug("Enrich input: {}".format(total_matches))
-
+    else:
         # This part is now indented to NOT alert if the ioc is not in MISP
         enriched = unicor_enrichment_utils.enrich_logs(total_matches, misp_connections, False)
         enriched_minified = unicor_enrichment_utils.enrich_logs(total_matches_minified, misp_connections, True)
