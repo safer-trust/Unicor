@@ -4,9 +4,9 @@
 a = Analysis(
     ['unicor.py'],
     pathex=[],
-    binaries=[('/usr/local/lib/python3.9/dist-packages/pymisp', 'pymisp')],
-    datas=[],
-    hiddenimports=[],
+    binaries=[('/usr/local/lib/python3.10/dist-packages/pymisp', 'pymisp')],
+    datas=[('subcommands/','subcommands/'), ('utils/', 'utils/')],
+    hiddenimports=['pymisp','asyncio','cachetools','pytz','jsonlines','smtplib','jinja2','email.mime','email.mime.text','email.mime.multipart'],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
