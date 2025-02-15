@@ -73,7 +73,7 @@ def slack_alerts(match, config, alert_pattern, alerts_database, alerts_database_
             misp_ioc += "`" + event.get('ioc').replace('.', '[.]') + "` (" + event.get('ioc_type') + ")\n"
             misp_ioc_addition += "- *MISP IOC date*: " + event.get('publication') + "\n"
             if event.get('comment'):
-                misp_ioc_addition += "- *MISP IOC Comment*: " + event.get('comment') + "\n"
+                misp_ioc_addition += "- *MISP IOC Comment*: " + event.get('comment').replace('\n', ', ') + "\n"
         else:
             misp_events = "[No MISP event found]\n"
     else:
