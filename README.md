@@ -166,7 +166,7 @@ Create the relevant user, files and directories, and assign permissions:
 In case it is imperative to use a self-signed certificate with MISP, or an alternative CA bundle, for example for testing, it is possible to pass on a path to the certificate and maintain a TLS connection:
 
 ```
-CURL_CA_BUNDLE="$CURL_CA_BUNDLE:/var/containers/misp-jisc/persistent/misp/tls/misp.crt" /usr/local/bin/unicor fetch-iocs
+CURL_CA_BUNDLE=/var/containers/misp-jisc/persistent/misp/tls/misp.crt /usr/local/bin/unicor fetch-iocs
 ```
 For installations from the repo, it is recommended to add the `CURL_CA_BUNDLE` variable directly in `/usr/local/bin`
 
