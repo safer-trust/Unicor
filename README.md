@@ -71,7 +71,9 @@ git clone https://github.com/safer-trust/unicor.git
 cd unicor/
 pip install -r requirements.txt
 src/
-pyinstaller -F  unicor.py
+PYMISP_PATH=$(python3 -c "import pymisp, os; print(os.path.dirname(pymisp.__file__))")
+sed -i "s|('\([^']*\)/pymisp', 'pymisp')|('$PYMISP_PATH', 'pymisp')|g" unicor.spec
+pyinstaller unicor.spec
 ```
 Then the binary will be readily available:
 ```
