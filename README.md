@@ -181,7 +181,7 @@ For installations from the repo, it is recommended to add the `CURL_CA_BUNDLE` v
 
 Unicor can reprocess and re-correlate JSON input as new MISP events are added.
   1. Create a dedicated directory owned by the `unicor` user to add JSON files.
-  For example: `mkdir /var/unicor/archive/ && chownchown -R unicor:unicor /var/unicor/archive/`
+  For example: `mkdir /var/unicor/archive/ && chown -R unicor:unicor /var/unicor/archive/`
   4. Add another CRON to run retro-searches on a schedule, for example in `/etc/crontab`:
 
   ```
