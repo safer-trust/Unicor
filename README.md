@@ -118,7 +118,8 @@ For compatibility with the rest of this guide, it is also necessary to create a 
 For example, a Bash or Python script in `/usr/local/bin/unicor`:
 
 ```
-sudo bash -c 'echo -e "#!/bin/bash\npython3 -m unicor \"\$@\"" > /usr/local/bin/unicor && chmod +x /usr/local/bin/unicor'
+cd src/
+sudo bash -c 'echo -e "#!/bin/bash\ncd \"$(pwd)\"\npython3 -m unicor \"\$@\"" > /usr/local/bin/unicor && chmod +x /usr/local/bin/unicor'
 ```
 
 ### 2. Configuring Unicor
@@ -160,22 +161,23 @@ Create the relevant user, files and directories, and assign permissions:
 
 - Test the Unicor commands
   ```sh
-  # sudo -u unicor unicor fetch-iocs
-  # sudo -u unicor unicor correlate
-  # sudo -u unicor unicor alert
+  # sudo -u unicor /usr/local/bin/unicor fetch-iocs
+  # sudo -u unicor /usr/local/bin/unicor correlate
+  # sudo -u unicor /usr/local/bin/unicor alert
   ```
 - Using self-signed certificates or other CA Bundles
 In case it is imperative to use a self-signed certificate with MISP, or an alternative CA bundle, for example for testing, it is possible to pass on a path to the certificate and maintain a TLS connection:
 
 ```
-CURL_CA_BUNDLE=/var/containers/misp-jisc/persistent/misp/tls/misp.crt  unicor fetch-iocs
+CURL_CA_BUNDLE=/var/containers/misp-jisc/persistent/misp/tls/misp.crt /usr/local/bin/unicor fetch-iocs
 ```
+For installations from the repo, it is recommended to add the `CURL_CA_BUNDLE` variable directly in `/usr/local/bin`
 
 - Add a CRON to run Unicor on a schedule, for example in `/etc/crontab`:
 
   ```
-  * * * * * unicor unicor fetch-iocs  >> /var/log/unicor-fetch-iocs.log 2>&1
-  * * * * * unicor unicor correlate  /var/unicor/matches >> /var/log/unicor-correlate.log 2>&1 &&  pdnssoc-cli alert  /var/unicor/alerts/ >> /var/log/unicor-alert.log 2>&1
+  * * * * * unicor /usr/local/bin/unicor fetch-iocs  >> /var/log/unicor-fetch-iocs.log 2>&1
+  * * * * * unicor /usr/local/bin/unicor correlate  /var/unicor/matches >> /var/log/unicor-correlate.log 2>&1 &&  /usr/local/bin/unicor alert  /var/unicor/alerts/ >> /var/log/unicor-alert.log 2>&1
   ```
 
 - Optional: Enable retro-searches
@@ -186,7 +188,7 @@ Unicor can reprocess and re-correlate JSON input as new MISP events are added.
   4. Add another CRON to run retro-searches on a schedule, for example in `/etc/crontab`:
 
   ```
-    * * * * * unicor ([ $(awk '{print $1}' /proc/loadavg) \< 0.5 ] && unicor correlate /var/unicor/archive/) >> /var/log/unicor-retro.log  2>&1
+    * * * * * unicor ([ $(awk '{print $1}' /proc/loadavg) \< 0.5 ] && /usr/local/bin/unicor correlate /var/unicor/archive/) >> /var/log/unicor-retro.log  2>&1
   ```
 
 The main use case here is `dnstap` data process with [DNS-collector](https://github.com/dmachard/DNS-collector), where a dedicated `pipelines`
