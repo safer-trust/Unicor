@@ -92,12 +92,6 @@ Commands:
 ```
 A ELF 64-bit dynamically linked version is also directly available in the [dist directory](https://github.com/safer-trust/unicor/tree/main/src/dist) of the repository.
 
-On some systems, it is necessary to specify the path of specific missing modules:
-```
-pyinstaller  --add-binary="/usr/local/lib/python3.9/dist-packages/pymisp:pymisp" -F  unicor.py
-```
-
-
 Move the binary in one of the executable PATH, for example:
 
 ```sh
@@ -113,6 +107,7 @@ This is not recommended and may result in a number of issues with Python depende
 git clone https://github.com/safer-trust/unicor.git
 cd unicor/
 pip install -r requirements.txt
+cd src
 python3 -m unicor
 ```
 
@@ -186,7 +181,7 @@ For installations from the repo, it is recommended to add the `CURL_CA_BUNDLE` v
 
 Unicor can reprocess and re-correlate JSON input as new MISP events are added.
   1. Create a dedicated directory owned by the `unicor` user to add JSON files.
-  For example: `mkdir /var/unicor/archive/ && chownchown -R unicor:unicor /var/unicor/archive/`
+  For example: `mkdir /var/unicor/archive/ && chown -R unicor:unicor /var/unicor/archive/`
   4. Add another CRON to run retro-searches on a schedule, for example in `/etc/crontab`:
 
   ```
