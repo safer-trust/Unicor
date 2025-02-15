@@ -174,7 +174,13 @@ For installations from the repo, it is recommended to add the `CURL_CA_BUNDLE` v
 
   ```
   * * * * * unicor /usr/local/bin/unicor fetch-iocs  >> /var/log/unicor-fetch-iocs.log 2>&1
-  * * * * * unicor /usr/local/bin/unicor correlate  /var/unicor/matches >> /var/log/unicor-correlate.log 2>&1 &&  /usr/local/bin/unicor alert  /var/unicor/alerts/ >> /var/log/unicor-alert.log 2>&1
+  * * * * * unicor /usr/local/bin/unicor correlate  /var/unicor/matches >> /var/log/unicor-correlate.log 2>&1 && /usr/local/bin/unicor alert /var/unicor/alerts/ >> /var/log/unicor-alert.log 2>&1
+  ```
+
+With the log files:
+  ```
+  touch /var/log/unicor-alert.log /var/log/unicor-fetch-iocs.log /var/log/unicor-correlate.log
+  chown unicor /var/log/unicor-*
   ```
 
 - Optional: Enable retro-searches
