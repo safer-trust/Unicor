@@ -14,9 +14,14 @@ misp_servers:
      tags: # In addition, if the events have specific $names tags, we will also enclude older events up to $days days.
      - names:
          - "apt"
-         - "tlp:amber"
-       delta: 
-         days: 365 
+         - "#APT"
+         - "cert-ist:threat_targeted_sector=\"Academic and Research\""
+       delta:
+         days: 150
+     - names:
+         - "SAFER"
+       delta:
+         days: 1500
 
 correlation: # use this if no files are defined from commmand line
   input_dir: /var/unicor/matches # This is were JSON input from dns-collector, Zeek, etc. goes
