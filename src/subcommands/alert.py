@@ -73,7 +73,7 @@ def alert(ctx,
         # Reading an alert file
         if file_path.is_file():
             alerts, _ =  unicor_file_utils.read_file(file_path, delete_after_read=False)
-            logger.info("{} pending alerts".format(len(alerts)))  
+            logger.info("{} alerts to be processed".format(len(alerts)))  
             if alerts:
                 try:
                     # Going through each of the alerts
@@ -97,9 +97,7 @@ def alert(ctx,
                                 continue 
                             
                             # At this stage, each remaining alert needs to be sent, if it is under the threshold!
-                            
-                            alerts_counter += 1
-                            
+                                                    
                             if alerts_counter < max_alerts_counter:
                                 logger.debug("Sending an alert for: {}".format(alert_pattern))
                                 if alerts_counter == max_alerts_counter - 1:
@@ -109,9 +107,10 @@ def alert(ctx,
                                 if alert_type == "email":           
                                     unicor_alerting_utils.email_alerts(match, alerting_config['email'], summary=False)
                             
-                            else:
-                                logger.warning("Too many alerts to be sent, sending only {}".format(max_alerts_counter))
-                                continue
+                            if alerts_counter == max_alerts_counter:
+                                logger.warning("Too many alerts to be sent, sent only {}".format(max_alerts_counter))
+                            alerts_counter += 1
+
                             # Here we need to catch an exception.
                             # If the request worked, then register the alert in our "database" to avoir duplicate alerts
                             #register_new_alert(alerts_database, alerts_database_max_size, alert_pattern)
@@ -141,9 +140,7 @@ def alert(ctx,
                                             continue 
                                         
                                         # At this stage, each remaining alert needs to be sent, if it is under the threshold!
-                                        
-                                        alerts_counter += 1
-                                        
+                                                                                
                                         if alerts_counter < max_alerts_counter:
                                             logger.debug("Sending an alert for: {}".format(alert_pattern))
                                                     
@@ -153,9 +150,10 @@ def alert(ctx,
                                                 unicor_alerting_utils.messaging_webhook_alerts(match, alerting_config['messaging_webhook'], alert_pattern, alerts_database, alerts_database_max_size, alert_type)
                                             if alert_type == "email":           
                                                 unicor_alerting_utils.email_alerts(match, alerting_config['email'], summary=False)
-                                        else:
-                                            logger.warning("Too many alerts to be sent, sending only {}".format(max_alerts_counter))
-                                            continue
+                                        if alerts_counter == max_alerts_counter:
+                                            logger.warning("Too many alerts to be sent, sent only {}".format(max_alerts_counter))
+                                        alerts_counter += 1
+
                         except Exception as e:  # Capture specific error details        
                                 logger.error("Failed to parse {}, skipping. Error: {}".format(file, str(e)))
                                 continue
