@@ -102,7 +102,8 @@ def alert(ctx,
                             
                             if alerts_counter < max_alerts_counter:
                                 logger.debug("Sending an alert for: {}".format(alert_pattern))
-                                
+                                if alerts_counter == max_alerts_counter - 1:
+                                                match['Detection'] += "\n\n*WARNING*: TOO MANY ALERTS, NOT SENDING MORE, CHECK UNICOR LOGS."
                                 if alert_type == "messaging_webhook":
                                     unicor_alerting_utils.messaging_webhook_alerts(match, alerting_config['messaging_webhook'], alert_pattern, alerts_database, alerts_database_max_size, alert_type)
                                 if alert_type == "email":           
@@ -146,6 +147,8 @@ def alert(ctx,
                                         if alerts_counter < max_alerts_counter:
                                             logger.debug("Sending an alert for: {}".format(alert_pattern))
                                                     
+                                            if alerts_counter == max_alerts_counter - 1:
+                                                match['Detection'] += "\n\n*WARNING*: TOO MANY ALERTS, NOT SENDING MORE, CHECK UNICOR LOGS."
                                             if alert_type == "messaging_webhook":
                                                 unicor_alerting_utils.messaging_webhook_alerts(match, alerting_config['messaging_webhook'], alert_pattern, alerts_database, alerts_database_max_size, alert_type)
                                             if alert_type == "email":           
