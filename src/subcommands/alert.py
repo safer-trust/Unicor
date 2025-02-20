@@ -49,11 +49,13 @@ def if_alert_exists(alerts_database, alert):
 @click.pass_context
 def alert(ctx,
     **kwargs):
-
+    
+    alerts_counter = 0
     alerting_config = ctx.obj['CONFIG']['alerting']
     correlation_config = ctx.obj['CONFIG']['correlation']
     alerts_database = correlation_config['alerts_database']
     alerts_database_max_size = correlation_config['alerts_database_max_size']
+    max_alerts_counter = alerting_config['max_alerts']
 
     # iterate through alert configs enabled
     for alert_type, alert_conf in ctx.obj['CONFIG']['alerting'].items():
@@ -94,13 +96,20 @@ def alert(ctx,
                                 logger.debug("Redundant alert, skipping: {}".format(alert_pattern))
                                 continue 
                             
-                            # At this stage, each remaining alert needs to be sent!
-                            logger.debug("Sending an alert for: {}".format(alert_pattern))
+                            # At this stage, each remaining alert needs to be sent, if it is under the threshold!
                             
-                            if alert_type == "messaging_webhook":
-                                unicor_alerting_utils.messaging_webhook_alerts(match, alerting_config['messaging_webhook'], alert_pattern, alerts_database, alerts_database_max_size, alert_type)
-                            if alert_type == "email":           
-                                unicor_alerting_utils.email_alerts(match, alerting_config['email'], summary=False)
+                            alerts_counter += 1
+                            
+                            if alerts_counter < max_alerts_counter:
+                                logger.debug("Sending an alert for: {}".format(alert_pattern))
+                                
+                                if alert_type == "messaging_webhook":
+                                    unicor_alerting_utils.messaging_webhook_alerts(match, alerting_config['messaging_webhook'], alert_pattern, alerts_database, alerts_database_max_size, alert_type)
+                                if alert_type == "email":           
+                                    unicor_alerting_utils.email_alerts(match, alerting_config['email'], summary=False)
+                            
+                            else:
+                                logger.warning("Too many alerts to be sent, sending only {}".format(max_alerts_counter))
                             
                             # Here we need to catch an exception.
                             # If the request worked, then register the alert in our "database" to avoir duplicate alerts
@@ -130,13 +139,19 @@ def alert(ctx,
                                             logger.debug("Redundant alert, skipping: {}".format(alert_pattern))
                                             continue 
                                         
-                                        # At this stage, each remaining alert needs to be sent!
-                                        logger.debug("Sending an alert for: {}".format(alert_pattern))
+                                        # At this stage, each remaining alert needs to be sent, if it is under the threshold!
                                         
-                                        if alert_type == "messaging_webhook":
-                                            unicor_alerting_utils.messaging_webhook_alerts(match, alerting_config['messaging_webhook'], alert_pattern, alerts_database, alerts_database_max_size, alert_type)
-                                        if alert_type == "email":           
-                                            unicor_alerting_utils.email_alerts(match, alerting_config['email'], summary=False)
+                                        alerts_counter += 1
+                                        
+                                        if alerts_counter < max_alerts_counter:
+                                            logger.debug("Sending an alert for: {}".format(alert_pattern))
+                                                    
+                                            if alert_type == "messaging_webhook":
+                                                unicor_alerting_utils.messaging_webhook_alerts(match, alerting_config['messaging_webhook'], alert_pattern, alerts_database, alerts_database_max_size, alert_type)
+                                            if alert_type == "email":           
+                                                unicor_alerting_utils.email_alerts(match, alerting_config['email'], summary=False)
+                                        else:
+                                            logger.warning("Too many alerts to be sent, sending only {}".format(max_alerts_counter))
 
                         except Exception as e:  # Capture specific error details        
                                 logger.error("Failed to parse {}, skipping. Error: {}".format(file, str(e)))

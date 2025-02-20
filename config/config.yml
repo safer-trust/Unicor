@@ -32,6 +32,8 @@ correlation: # use this if no files are defined from commmand line
   malicious_ips_file: /var/unicor/misp_ips.txt # fetch-iocs will add IPs from MISP here
 
 alerting:
+  
+  max_alerts: 5 # Maximum number of alerts to be sent
   # At least one of the following needs to be enabled. Webhook is the prefered choice.
   messaging_webhook:  # Slack, Mattermost, Google Chat, etc.
      webhook: "https://hooks.slack.com/services/..." # <-- You MUST ADD YOUR OWN WEBHOOK
