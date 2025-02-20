@@ -111,7 +111,7 @@ def alert(ctx,
                             
                             else:
                                 logger.warning("Too many alerts to be sent, sending only {}".format(max_alerts_counter))
-                            
+                                continue
                             # Here we need to catch an exception.
                             # If the request worked, then register the alert in our "database" to avoir duplicate alerts
                             #register_new_alert(alerts_database, alerts_database_max_size, alert_pattern)
@@ -155,7 +155,7 @@ def alert(ctx,
                                                 unicor_alerting_utils.email_alerts(match, alerting_config['email'], summary=False)
                                         else:
                                             logger.warning("Too many alerts to be sent, sending only {}".format(max_alerts_counter))
-
+                                            continue
                         except Exception as e:  # Capture specific error details        
                                 logger.error("Failed to parse {}, skipping. Error: {}".format(file, str(e)))
                                 continue
