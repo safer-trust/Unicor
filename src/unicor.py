@@ -14,7 +14,7 @@ logging.basicConfig(
     format='%(asctime)s - %(levelname)s - %(message)s',  # Include timestamp
     datefmt='%Y-%m-%d %H:%M:%S',  # Customize date format
     level=logging.INFO  # Set logging level
-    
+)   
 logging.basicConfig(level=logging.DEBUG)
 
 def configure(ctx, param, filename):
