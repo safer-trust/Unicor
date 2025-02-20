@@ -42,8 +42,8 @@ def register_new_alert(alerts_database, alerts_database_max_size, alert):
     return False
 
 
-def slack_alerts(match, config, alert_pattern, alerts_database, alerts_database_max_size, alert_type):
-    #logger.debug("Slack hook {}".format(config['slack_hook']))
+def messaging_webhook_alerts(match, config, alert_pattern, alerts_database, alerts_database_max_size, alert_type):
+    #logger.debug("messaging_webhook hook {}".format(config['webhook']))
 
     msg = ""
     # Parsing MISP event(s) associate with the IOC
@@ -80,7 +80,7 @@ def slack_alerts(match, config, alert_pattern, alerts_database, alerts_database_
         logger.warning("No correlation data found for {}".format(alert_pattern))
 
 
-    # Assembling our Slack message
+    # Assembling our messaging_webhook message
     msg += misp_events
     if misp_tags:
         msg += "*tags*: \"" + misp_tags + "\"\n"
@@ -111,8 +111,8 @@ def slack_alerts(match, config, alert_pattern, alerts_database, alerts_database_
 
     try:
         
-        response = requests.post(config['slack_hook'], headers=headers, json=payload)
-        logger.debug("Slack: {} - {}".format(response.status_code, response.text))
+        response = requests.post(config['webhook'], headers=headers, json=payload)
+        logger.debug("Webhook: {} - {}".format(response.status_code, response.text))
         response.raise_for_status()  # This will raise an HTTPError if the response was an HTTP error
 
 
@@ -121,7 +121,7 @@ def slack_alerts(match, config, alert_pattern, alerts_database, alerts_database_
 
 
     except requests.exceptions.RequestException as e:
-        logger.warning("Slack post failed: {}".format(e))
+        logger.warning("Webhook post failed: {}".format(e))
 
 def email_alerts(alerts, config, summary = False):
 

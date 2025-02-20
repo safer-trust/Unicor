@@ -32,9 +32,9 @@ correlation: # use this if no files are defined from commmand line
   malicious_ips_file: /var/unicor/misp_ips.txt # fetch-iocs will add IPs from MISP here
 
 alerting:
-  # At least one of the following needs to be enabled. Slack is the prefered choice.
-  slack: 
-     slack_hook: "https://hooks.slack.com/services/..." # <-- You MUST ADD YOUR OWN WEBHOOK
+  # At least one of the following needs to be enabled. Webhook is the prefered choice.
+  messaging_webhook:  # Slack, Mattermost, Google Chat, etc.
+     webhook: "https://hooks.slack.com/services/..." # <-- You MUST ADD YOUR OWN WEBHOOK
 
 # Note: Google Chat works just like Slack. Just add a Google Chat Webhook URL in the "slack_hook" above
 #  email:

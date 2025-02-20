@@ -23,13 +23,3 @@ def parse_rfc3339_ns(timestamp):
     dt = dt.replace(microsecond=nanoseconds // 1000)  # Convert nanoseconds to microseconds
 
     return dt
-
-def get_time_from_pointer(path):
-    pointer_path = Path(path)
-    if pointer_path.is_file():
-        pointer_file , _  = read_file(pointer_path)
-        for line in pointer_file:
-            timestamp = parse_rfc3339_ns(line)
-            pointer_dt = timestamp
-            return pointer_dt
-    return None

@@ -97,8 +97,8 @@ def alert(ctx,
                             # At this stage, each remaining alert needs to be sent!
                             logger.debug("Sending an alert for: {}".format(alert_pattern))
                             
-                            if alert_type == "slack":
-                                unicor_alerting_utils.slack_alerts(match, alerting_config['slack'], alert_pattern, alerts_database, alerts_database_max_size, alert_type)
+                            if alert_type == "messaging_webhook":
+                                unicor_alerting_utils.messaging_webhook_alerts(match, alerting_config['messaging_webhook'], alert_pattern, alerts_database, alerts_database_max_size, alert_type)
                             if alert_type == "email":           
                                 unicor_alerting_utils.email_alerts(match, alerting_config['email'], summary=False)
                             
@@ -133,8 +133,8 @@ def alert(ctx,
                                         # At this stage, each remaining alert needs to be sent!
                                         logger.debug("Sending an alert for: {}".format(alert_pattern))
                                         
-                                        if alert_type == "slack":
-                                            unicor_alerting_utils.slack_alerts(match, alerting_config['slack'], alert_pattern, alerts_database, alerts_database_max_size, alert_type)
+                                        if alert_type == "messaging_webhook":
+                                            unicor_alerting_utils.messaging_webhook_alerts(match, alerting_config['messaging_webhook'], alert_pattern, alerts_database, alerts_database_max_size, alert_type)
                                         if alert_type == "email":           
                                             unicor_alerting_utils.email_alerts(match, alerting_config['email'], summary=False)
 
