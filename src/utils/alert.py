@@ -13,7 +13,7 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from utils.time import parse_rfc3339_ns
 
-logger = logging.getLogger("unicorcli")
+logger = logging.getLogger(__name__)
 
 # Add a hash of new alerts in a file if they are new
 def register_new_alert(alerts_database, alerts_database_max_size, alert):

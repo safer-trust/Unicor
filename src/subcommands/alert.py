@@ -90,7 +90,7 @@ def alert(ctx,
                             
                             # First, make sure we are not about to create a duplicate alert
                             # match['timestamp'][:-1][:16]
-                            alert_pattern  =  sha256_hash(match['detection'] + match['ioc'] + str(truncated_timestamp))
+                            alert_pattern  =  sha256_hash(match['ioc'] + str(truncated_timestamp))
 
                             if if_alert_exists(alerts_database, alert_pattern):
                                 logger.debug("Redundant alert, skipping: {}".format(alert_pattern))
