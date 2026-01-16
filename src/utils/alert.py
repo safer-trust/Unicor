@@ -73,7 +73,8 @@ def build_msg(path, match):
     # Load all alerts in one template
     timestamp = ""
     if not match.get('detections'): # We have a single detection, we need to extract + format timestamp
-        dt= datetime.strptime(match['timestamp'][:26], "%Y-%m-%dT%H:%M:%S.%f")
+        dt = datetime.strptime(
+            (match.get("timestamp") or match.get("timestamp_rfc3339ns"))[:26], "%Y-%m-%dT%H:%M:%S.%f")
         timestamp =  dt.strftime("%Y-%m-%d %H:%M:%SZ")
     context = {
         'events': match.get('correlation', {}).get('misp', {}).get('events', []),

@@ -84,6 +84,8 @@ def alert(ctx,
                 logger.info("{} alerts to be processed in {}".format(len(alerts), file_path))  
                 # Processing each alert in each file                    
                 try: # Going through each of the alerts
+                    
+                    all_alert_patterns = set() # To track all alert patterns in this batch
                     for match in alerts:
                                 # Alerting strictly on IOCs currently loaded by fetch-iocs as per Unicor config
                                 # Only alerts containing these IOCs will be kept     
@@ -111,9 +113,8 @@ def alert(ctx,
                                     # One alert can have one or multiple detections
                                     
                                     if match.get('detections'): # We have multiple detections
-                                    # Go through each detection, and "pop" out the redundant entries
-                                        # Track all alert_patterns generated in these detections
-                                        all_alert_patterns = set()
+                                    
+                                        # Go through each detection, and "pop" out the redundant entries
                                         for i in reversed(range(len(match["detections"]))):
                                             detection_entry = match["detections"][i]
                                             alert_pattern = sha256_hash(detection_entry["detection"] + match.get('ioc') + str(truncated_timestamp))
@@ -129,7 +130,7 @@ def alert(ctx,
                                         # Re-flatten the detections in case we went from multiple detections to a single detection due to duplicates
                                         match = unicor_correlation_utils.flatten_detections(match)
                                         # Have all the detections in this alert been seen before?
-                                        if not match["detections"]:
+                                        if not (match.get("detections") or match.get("detection")):
                                             continue
                                         #
                                     else: # We have a single detection
