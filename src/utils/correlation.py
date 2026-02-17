@@ -35,7 +35,7 @@ def correlate_events(lines, shared_data):
         logger.debug("Parsing: {}".format(match))
 
         # Testing if input is pdns. If so, input can be a domain, an array of IPs, or both
-        if match.get('dns', {}).get('id'):
+        if match.get('dns', {}).get('id') is not None:
             logger.debug("DNS mode")
             match['ioc_type'] = "dns" #Not sure yet if ioc_type is an IP or a domain
             if is_minified:
