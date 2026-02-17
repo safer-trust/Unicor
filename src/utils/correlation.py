@@ -127,29 +127,25 @@ def correlate_file(file_iter, domain_attributes, ip_attributes, domain_attribute
     return total_matches
 
 def flatten_detections(matches):
-    """
-    Flattens entries that contain only one detection by merging
-    ioc and ioc_type into the detection dictionary.
+    single_input = isinstance(matches, dict) and "detections" in matches
 
-    This is to refactor the JSON and avoid having alerts with "Detection 1" if we have only one detection.
-    """
-    if isinstance(matches, dict):
-        matches = [matches]  # wrap single alert in a list
+    iterable = (
+        [matches] if single_input
+        else matches.values() if isinstance(matches, dict)
+        else matches
+    )
 
-    flattened_matches = []
+    flattened = []
 
-    for ioc, data in matches.items():
-        detections = data["detections"]
+    for data in iterable:
+        detections = data.get("detections", [])
 
         if len(detections) == 1:
-            # Merge ioc and ioc_type into the detection dict
-            single_detection = {
-                **detections[0],
-                "ioc": data.get("ioc"),
-                "ioc_type": data.get("ioc_type"),
-            }
-            flattened_matches.append(single_detection)
+            merged = {**data, **detections[0]}
+            merged.pop("detections", None)
+            flattened.append(merged)
         else:
-            flattened_matches.append(data)
+            flattened.append(data)
 
-    return flattened_matches
+    # Preserve original input type
+    return flattened[0] if single_input else flattened
