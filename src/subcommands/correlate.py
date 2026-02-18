@@ -136,7 +136,7 @@ def correlate(ctx,
                 except ValueError:
                     logging.warning("Invalid malicious IP value {}".format(attribute.value))
 
-    logger.debug("Correlating with {} domains and {} ips".format(len(domain_attributes), len(ip_attributes)))
+    logger.debug("Correlating with {} domains and {} ips".format(len(domain_attributes), len(ip_attributes.iter_cidrs())))
     
     
     # Now that we have MISP data, let's correlate it with input files

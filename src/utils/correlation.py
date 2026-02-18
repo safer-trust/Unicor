@@ -10,7 +10,7 @@ logger = logging.getLogger("unicorcli")
 
 @cached(cache={}, key=lambda domain, domain_set: hashkey(domain))
 def correlate_domain(domain, domain_set):
-    if domain in domain_set:
+    if domain_set.get(domain) is not None:
         return True
     else:
         return False
@@ -30,11 +30,11 @@ def correlate_events(lines, shared_data):
     domain = ""
     for match in lines:
     # Extract the timestamp, domain and ips
-        logger.debug("Parsing: {}".format(match))
+        #logger.debug("Parsing: {}".format(match))
 
         # Testing if input is pdns. If so, input can be a domain, an array of IPs, or both
         if match.get('dns', {}).get('id') is not None:
-            logger.debug("DNS mode")
+            #logger.debug("DNS mode")
             match['ioc_type'] = "dns" #Not sure yet if ioc_type is an IP or a domain
             if is_minified:
                 try:
@@ -52,7 +52,7 @@ def correlate_events(lines, shared_data):
                     logger.warning("Unable to digest timestamp: {}".format(match))
                 domain = match['dns']['qname']
                 ips = match['dns']['resource-records']['an']
-                logger.debug("IOC: {}".format(domain))
+                #logger.debug("IOC: {}".format(domain))
 
             answers =  ', '.join([f"{entry['rdata'].split(' ', 1)[-1]} [{entry['rdatatype']}]" for entry in ips])
             if not answers:
