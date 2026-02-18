@@ -93,25 +93,23 @@ def correlate(ctx,
 
 
     # Set up domain and IP lists to alert on, in domain_attributes and ip_attributes
-    domain_attributes = []
+    domain_attributes = {}
     domain_attributes_metadata = {}
     if 'malicious_domains_file' in correlation_config and correlation_config['malicious_domains_file'] and not kwargs.get('retro_lookup'):
         domains_iter, _ = unicor_file_utils.read_file(Path(correlation_config['malicious_domains_file']), delete_after_read=False)
         for domain in domains_iter:
-            domain_attributes.append(domain.strip())
+            domain_attributes.update({ domain.strip(): 1 })
     else:
         for misp, args in misp_connections:
             attributes = misp.search(controller='attributes', type_attribute='domain', to_ids=1, pythonify=True, **args)
             for attribute in attributes:
-                domain_attributes.append(attribute.value)
+                domain_attributes.update({ attribute.value: 1})
                 if kwargs.get('retro_lookup'):
                     if attribute.value in domain_attributes_metadata:
                         if attribute.timestamp > domain_attributes_metadata[attribute.value]:
                             domain_attributes_metadata[attribute.value] = attribute.timestamp
                     else:
                         domain_attributes_metadata[attribute.value] = attribute.timestamp
-
-    domain_attributes = list(set(domain_attributes))
 
     ip_attributes = netaddr.IPSet()
     ip_attributes_metadata = {}
@@ -138,8 +136,6 @@ def correlate(ctx,
                 except ValueError:
                     logging.warning("Invalid malicious IP value {}".format(attribute.value))
 
-    ip_attributes = list(set(ip_attributes))
-
     logger.debug("Correlating with {} domains and {} ips".format(len(domain_attributes), len(ip_attributes)))
     
     
@@ -164,8 +160,8 @@ def correlate(ctx,
                     try:
                         matches = unicor_correlation_utils.correlate_file(
                             file_iter,
-                            set(domain_attributes),
-                            set(ip_attributes),
+                            domain_attributes,
+                            ip_attributes,
                             domain_attributes_metadata,
                             ip_attributes_metadata,
                             is_minified
