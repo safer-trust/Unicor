@@ -2,7 +2,7 @@ import click
 import traceback
 from datetime import timedelta
 from datetime import datetime
-import ipaddress
+import netaddr
 from subcommands.utils import make_sync
 from utils import file as unicor_file_utils
 from utils import time as unicor_time_utils
@@ -113,14 +113,13 @@ def correlate(ctx,
 
     domain_attributes = list(set(domain_attributes))
 
-    ip_attributes = []
+    ip_attributes = netaddr.IPSet()
     ip_attributes_metadata = {}
     if 'malicious_ips_file' in correlation_config and correlation_config['malicious_ips_file'] and not kwargs.get('retro_lookup'):
         ips_iter, _ = unicor_file_utils.read_file(Path(correlation_config['malicious_ips_file']), delete_after_read=False)
         for attribute in ips_iter:
             try:
-                network = ipaddress.ip_network(attribute.strip(), strict=False)
-                ip_attributes.append(network)
+                ip_attributes.add(attribute.strip())
             except ValueError:
                 logging.warning("Invalid malicious IP value {}".format(attribute))
     else:
@@ -129,8 +128,7 @@ def correlate(ctx,
 
             for attribute in ips_iter:
                 try:
-                    network = ipaddress.ip_network(attribute.value, strict=False)
-                    ip_attributes.append(network)
+                    ip_attributes.add(attribute.value)
                     if kwargs.get('retro_lookup'):
                         if attribute.value in ip_attributes_metadata:
                             if attribute.timestamp > ip_attributes_metadata[attribute.value]:

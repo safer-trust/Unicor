@@ -1,6 +1,5 @@
 import click
 from datetime import datetime
-import ipaddress
 from subcommands.utils import make_sync
 from utils import file as unicor_file_utils
 from utils import time as unicor_time_utils
