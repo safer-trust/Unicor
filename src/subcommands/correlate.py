@@ -14,8 +14,16 @@ import jsonlines
 from pymisp import PyMISP
 from pathlib import Path
 import shutil
+import random
+import string
 
 logger = logging.getLogger(__name__)
+
+# Return a non-cryptographically-safe random string for
+# filename collision avoidance
+def file_nocollide_prefix():
+    outstr = str(datetime.now().strftime("%s"))
+    return outstr + "_" + ''.join(random.choice(string.ascii_letters) for i in range(8))
 
 @click.command(help="Correlate input files and produce matches for potential alerts. Add --retro_disco_lookup to reprocesses input in the list of newer MISP events")
 @click.argument(
@@ -33,6 +41,13 @@ logger = logging.getLogger(__name__)
     '--logging',
     type=click.Choice(['INFO','WARN','DEBUG','ERROR']),
     default="DEBUG"
+)
+@click.option(
+    'no_archive',
+    '--no_archive',
+    is_flag=True,
+    help="Delete input after processing instead of archiving it",
+    default=False
 )
 @click.option(
     'retro_disco_lookup',
@@ -70,19 +85,49 @@ logger = logging.getLogger(__name__)
     ),
 )
 @click.pass_context
-
 def correlate(ctx,
     **kwargs):
 
     correlation_config = ctx.obj['CONFIG']['correlation']
     max_alerts_counter = ctx.obj['CONFIG']['alerting']['max_alerts']
 
-    # This is important. By default, we delete the JSON date in the matches.
-    # If we run in retro search mode, we keep the file and do not delete it.
-    deletemode = True
+    # The retro_disco_lookup applies new match criteria to previous events.
+    # To do that, we need to save previous events in an archive, which we'll do unless
+    # told not to.
+    archive_event_files = True
+    if kwargs.get('no_archive'):
+        logging.info('Will delete input instead of archiving')
+        archive_event_files = False
+
+    # Match archived events against more current criteria
+    retro_disco_lookup = False
     if kwargs.get('retro_disco_lookup'):
         logging.info("Retro disco mode.")
-        deletemode = False
+        retro_disco_lookup = True
+
+    # Make sure the archive_dir is set up and usable.
+    # We don't care if it's missing unless we actually need it.
+    archive_dir = None
+    if ( archive_event_files or retro_disco_lookup ):
+        try:
+            archive_dir = ctx.obj['CONFIG']['correlation']['archive_dir']
+        except KeyError:
+            logging.error("Missing from config file: correlation -> archive_dir")
+            exit(1)
+        if ( not Path(archive_dir).is_dir() ):
+            logging.error("archive_dir %s is not a directory or does not exist (symlinks allowed)" % ( archive_dir ))
+            exit(1)
+
+    # Make sure the fail_dir is set up and usable.
+    fail_dir = None
+    try:
+        fail_dir = ctx.obj['CONFIG']['correlation']['fail_dir']
+    except KeyError:
+        logging.error("Missing from config file: correlation -> fail_dir")
+        exit(1)
+    if ( not Path(fail_dir).is_dir() ):
+        logging.error("fail_dir %s is not a directory or does not exist (symlinks allowed)" % ( fail_dir ))
+        exit(1)
 
     # Set up MISP connections
     misp_connections = []
@@ -91,12 +136,11 @@ def correlate(ctx,
         if misp:
             misp_connections.append((misp, misp_conf['args']))
 
-
     # Set up domain and IP lists to alert on, in domain_attributes and ip_attributes
     domain_attributes = {}
     domain_attributes_metadata = {}
-    if 'malicious_domains_file' in correlation_config and correlation_config['malicious_domains_file'] and not kwargs.get('retro_lookup'):
-        domains_iter, _ = unicor_file_utils.read_file(Path(correlation_config['malicious_domains_file']), delete_after_read=False)
+    if 'malicious_domains_file' in correlation_config and correlation_config['malicious_domains_file'] and not retro_disco_lookup:
+        domains_iter, _ = unicor_file_utils.read_file(Path(correlation_config['malicious_domains_file']))
         for domain in domains_iter:
             domain_attributes.update({ domain.strip(): 1 })
     else:
@@ -104,7 +148,7 @@ def correlate(ctx,
             attributes = misp.search(controller='attributes', type_attribute='domain', to_ids=1, pythonify=True, **args)
             for attribute in attributes:
                 domain_attributes.update({ attribute.value: 1})
-                if kwargs.get('retro_lookup'):
+                if retro_disco_lookup:
                     if attribute.value in domain_attributes_metadata:
                         if attribute.timestamp > domain_attributes_metadata[attribute.value]:
                             domain_attributes_metadata[attribute.value] = attribute.timestamp
@@ -113,8 +157,8 @@ def correlate(ctx,
 
     ip_attributes = netaddr.IPSet()
     ip_attributes_metadata = {}
-    if 'malicious_ips_file' in correlation_config and correlation_config['malicious_ips_file'] and not kwargs.get('retro_lookup'):
-        ips_iter, _ = unicor_file_utils.read_file(Path(correlation_config['malicious_ips_file']), delete_after_read=False)
+    if 'malicious_ips_file' in correlation_config and correlation_config['malicious_ips_file'] and not retro_disco_lookup:
+        ips_iter, _ = unicor_file_utils.read_file(Path(correlation_config['malicious_ips_file']))
         for attribute in ips_iter:
             try:
                 ip_attributes.add(attribute.strip())
@@ -127,7 +171,7 @@ def correlate(ctx,
             for attribute in ips_iter:
                 try:
                     ip_attributes.add(attribute.value)
-                    if kwargs.get('retro_lookup'):
+                    if retro_disco_lookup:
                         if attribute.value in ip_attributes_metadata:
                             if attribute.timestamp > ip_attributes_metadata[attribute.value]:
                                 ip_attributes_metadata[attribute.value] = attribute.timestamp
@@ -139,7 +183,7 @@ def correlate(ctx,
     logger.debug("Correlating with {} domains and {} ips".format(len(domain_attributes), len(ip_attributes.iter_cidrs())))
     
     
-    # Now that we have MISP data, let's correlate it with input files
+    # Now that we have MISP data, let's correlate it with input files...
     total_matches = []
     total_matches_minified = []
     if not kwargs.get('files'):
@@ -147,15 +191,23 @@ def correlate(ctx,
     else:
         files = kwargs.get('files')
 
+    # But wait, if we're doing retro lookups, prepend the archive dir so we process it first, 
+    # before new events are archived and processed twice.
+    if retro_disco_lookup:
+        files.insert(0, archive_dir)
+
     # Iterating through the file or the directory
     for file in files:
+        # To avoid duplicating code, we'll prepend the archive dir if needed.
+        # The files in the archive dir must not be archived.
+        processing_archive_dir = ( file == archive_dir )
+
         file_path = Path(file)
         file_paths = [file_path] if file_path.is_file() else file_path.rglob('*')
-
         for path in file_paths:
             if path.is_file():
                 # Reading an actual files with one JSON object per line
-                file_iter, is_minified = unicor_file_utils.read_file(path, delete_after_read=deletemode)
+                file_iter, is_minified = unicor_file_utils.read_file(path)
                 if file_iter:
                     try:
                         matches = unicor_correlation_utils.correlate_file(
@@ -177,10 +229,27 @@ def correlate(ctx,
                         else:
                             total_matches.extend(matches)
                     except:
-                        logger.error("Failed to parse {}, skipping".format(path))
+                        # Add a random string in the dst in case the pipeline keeps dumping the same file name into input.
+                        faildst = fail_dir + '/' + file_nocollide_prefix() + '_' + path.name
+                        logger.error("Failed to parse {}, skipping and moving to {}".format(path, fail_dir))
+                        path.rename(Path(faildst))
                         continue
                 else:
                     logger.debug("No data in {}".format(file_path))
+
+                # Do nothing for archived files
+                if processing_archive_dir:
+                    continue
+
+                # Do something with the file so it's not sitting in the input dir forever
+                if archive_event_files:
+                    # Add a random string in the dst in case the pipeline keeps dumping t he same file name into input.
+                    archivedst = archive_dir + '/' + file_nocollide_prefix() + '_' + path.name
+                    logger.info("Archiving {} to {}".format(path, archive_dir))
+                    path.rename(Path(archivedst))
+                else:
+                    logger.info("Archiving disabled, deleting {}".format(path))
+                    path.unlink()
 
   
   

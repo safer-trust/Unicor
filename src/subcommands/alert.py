@@ -79,7 +79,7 @@ def alert(ctx,
         for file_path in file_paths:      
             # Processing each file in the directory
             if file_path.is_file():
-                alerts, _ =  unicor_file_utils.read_file(file_path, delete_after_read=False)
+                alerts, _ =  unicor_file_utils.read_file(file_path)
                 logger.info("{} alerts to be processed in {}".format(len(alerts), file_path))  
                 # Processing each alert in each file                    
                 try: # Going through each of the alerts

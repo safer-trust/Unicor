@@ -10,11 +10,10 @@ logger = logging.getLogger("unicorcli")
 #
 # The other formats inherently do this.
 class JsonFileReader:
-    def __init__(self, file_name, delete_after_read=False):
+    def __init__(self, file_name):
         self.file_handle = open(file_name, mode='rb')
         self.file_name = file_name
         self.saw_end = False
-        self.delete_after_read = delete_after_read
         self.end_of_last_good_line = 0
 
     def __del__(self):
@@ -22,13 +21,7 @@ class JsonFileReader:
         # might be many more to process.
         if ( self.file_handle ):
             self.file_handle.close()
-
-        # Remove the file if and only if we reached the end
-        # and need to remove the file.
-        # This prevents losing contents if interrupted.
-        if ( self.delete_after_read and self.saw_end ):
-            os.unlink(self.file_name)
-    
+            
     def __iter__(self):
         return self
 
@@ -66,13 +59,18 @@ def read_generic(file_name):
     f = open(file_name, mode='rt')
     return f
 
-def read_file(file_path, delete_after_read):
+# Return an iterator of events from file_path.
+# Understands a handful of common formats.
+# Note: This previously truncated the file if requested, but that
+# responsibility is now on the caller since we don't know if the file was
+# successfully processed or not.
+def read_file(file_path):
     logging.debug("Parsing {}".format(file_path.absolute()))
 
     is_minified = False
     file_iter = None
     if file_path.suffix == ".json":
-        file_iter = JsonFileReader(file_path.absolute(), delete_after_read=delete_after_read)
+        file_iter = JsonFileReader(file_path.absolute())
     elif file_path.suffix == ".gz":
         file_iter = read_gzip(file_path.absolute())
     elif file_path.suffix == ".gz_minified":
@@ -84,14 +82,6 @@ def read_file(file_path, delete_after_read):
         file_iter = read_generic(file_path.absolute())
     else:
         logging.warning("File {} is not in valid format".format(file_path))
-    if delete_after_read and not file_path.suffix == ".json":
-      # We have the data from the file, let's delete the file now
-        logging.debug("Deleting {}".format(file_path))
-        with open(file_path, 'w') as file:
-            file.write("")  # Write an empty string to the file and automatically close it
-    #else:
-    #    logging.debug("NOT deleting {}".format(file_path))
-
     return file_iter, is_minified
 
 def write_generic(file_name):

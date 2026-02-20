@@ -154,7 +154,7 @@ def fetch_iocs(ctx,
 
     if domains_file.is_file():
         # File exists, let's try to update it
-        domains_iter, _ = unicor_file_utils.read_file(Path(correlation_config['malicious_domains_file']), delete_after_read=False)
+        domains_iter, _ = unicor_file_utils.read_file(Path(correlation_config['malicious_domains_file']))
         for domain in domains_iter:
             domain_attributes_old.append(domain.strip())
 
@@ -170,7 +170,7 @@ def fetch_iocs(ctx,
 
     if ips_file.is_file():
         # File exists, let's try to update it
-        ips_iter, _ = unicor_file_utils.read_file(Path(correlation_config['malicious_ips_file']), delete_after_read=False)
+        ips_iter, _ = unicor_file_utils.read_file(Path(correlation_config['malicious_ips_file']))
         for ip in ips_iter:
             ips_attributes_old.append(ip.strip())
 
