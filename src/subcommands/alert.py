@@ -99,96 +99,96 @@ def alert(ctx,
                     
                     all_alert_patterns = set() # To track all alert patterns in this batch
                     for match in alerts:
-                                # Alerting strictly on IOCs currently loaded by fetch-iocs as per Unicor config
-                                # Only alerts containing these IOCs will be kept     
-                                # Note: in DNS mode, 'ioc' may be a domain or one or multiple IP addresses. in DNS mode, match.get('ioc') is not populated yet.
-                                if  match.get('ioc') and match.get('ioc') not in malicious_iocs:
-                                    logger.debug(
-                                        "Alert dismissed: '{}' not found in Unicor ioc files".format(match.get('ioc'))
-                                    )
-                                    logger.debug("Dissmissed: {}".format(match))
+                        # Alerting strictly on IOCs currently loaded by fetch-iocs as per Unicor config
+                        # Only alerts containing these IOCs will be kept     
+                        # Note: in DNS mode, 'ioc' may be a domain or one or multiple IP addresses. in DNS mode, match.get('ioc') is not populated yet.
+                        if  match.get('ioc') and match.get('ioc') not in malicious_iocs:
+                            logger.debug(
+                                "Alert dismissed: '{}' not found in Unicor ioc files".format(match.get('ioc'))
+                            )
+                            logger.debug("Dissmissed: {}".format(match))
+                            continue
+                        
+                        # DEDUPLICATION and REPEATING alerts management
+                        
+                        # Making a string from the timestamp that should cover a 24h window
+                        if match.get('detections'): # In case we have multiple detection, we take the first
+                            first_timestamp = min(d["timestamp_rfc3339ns"] for d in match["detections"])
+                            dt = datetime.strptime(first_timestamp[:26], "%Y-%m-%dT%H:%M:%S.%f")
+                        else: # We have a single detection
+                            dt = datetime.strptime(match['timestamp'][:26], "%Y-%m-%dT%H:%M:%S.%f")
+                        epoch_time = int(time.mktime(dt.timetuple()))
+                        truncated_timestamp = epoch_time - (epoch_time % 86400)
+                        
+                        # Go through each candidate alert, and check if we have seen it in that time window
+                        try:
+                            # One alert can have one or multiple detections
+                            
+                            if match.get('detections'): # We have multiple detections
+                            
+                                # Go through each detection, and "pop" out the redundant entries
+                                for i in reversed(range(len(match["detections"]))):
+                                    detection_entry = match["detections"][i]
+                                    alert_pattern = sha256_hash(detection_entry["detection"] + match.get('ioc') + str(truncated_timestamp))
+                                    
+                                    if (if_alert_exists(alerts_database, alert_pattern) or alert_pattern in all_alert_patterns):
+                                        logger.debug("Duplicate alert: {}".format(detection_entry["detection"] + match.get('ioc') + str(truncated_timestamp)))
+                                        # Remove redundant detection in place
+                                        match["detections"].pop(i)
+                                    else:
+                                        logger.debug("New alert: {}".format(detection_entry["detection"] + match.get('ioc') + str(truncated_timestamp)))
+                                    all_alert_patterns.add(alert_pattern)
+                                    
+                                # Re-flatten the detections in case we went from multiple detections to a single detection due to duplicates
+                                match = unicor_correlation_utils.flatten_detections(match)
+                                # Have all the detections in this alert been seen before?
+                                if not (match.get("detections") or match.get("detection")):
                                     continue
-                                
-                                # DEDUPLICATION and REPEATING alerts management
-                                
-                                # Making a string from the timestamp that should cover a 24h window
-                                if match.get('detections'): # In case we have multiple detection, we take the first
-                                    first_timestamp = min(d["timestamp_rfc3339ns"] for d in match["detections"])
-                                    dt = datetime.strptime(first_timestamp[:26], "%Y-%m-%dT%H:%M:%S.%f")
-                                else: # We have a single detection
-                                    dt = datetime.strptime(match['timestamp'][:26], "%Y-%m-%dT%H:%M:%S.%f")
-                                epoch_time = int(time.mktime(dt.timetuple()))
-                                truncated_timestamp = epoch_time - (epoch_time % 86400)
-                                
-                                # Go through each candidate alert, and check if we have seen it in that time window
-                                try:
-                                    # One alert can have one or multiple detections
-                                    
-                                    if match.get('detections'): # We have multiple detections
-                                    
-                                        # Go through each detection, and "pop" out the redundant entries
-                                        for i in reversed(range(len(match["detections"]))):
-                                            detection_entry = match["detections"][i]
-                                            alert_pattern = sha256_hash(detection_entry["detection"] + match.get('ioc') + str(truncated_timestamp))
-                                            
-                                            if (if_alert_exists(alerts_database, alert_pattern) or alert_pattern in all_alert_patterns):
-                                                logger.debug("Duplicate alert: {}".format(detection_entry["detection"] + match.get('ioc') + str(truncated_timestamp)))
-                                                # Remove redundant detection in place
-                                                match["detections"].pop(i)
-                                            else:
-                                                logger.debug("New alert: {}".format(detection_entry["detection"] + match.get('ioc') + str(truncated_timestamp)))
-                                            all_alert_patterns.add(alert_pattern)
-                                            
-                                        # Re-flatten the detections in case we went from multiple detections to a single detection due to duplicates
-                                        match = unicor_correlation_utils.flatten_detections(match)
-                                        # Have all the detections in this alert been seen before?
-                                        if not (match.get("detections") or match.get("detection")):
-                                            continue
-                                        #
-                                    else: # We have a single detection
-                                        alert_pattern  =  sha256_hash(match['detection'] + match.get('ioc') + str(truncated_timestamp))
-                                        if if_alert_exists(alerts_database, alert_pattern):
-                                            logger.debug("Redundant alert, skipping: {}".format(alert_pattern))
-                                            continue 
-                                
+                                #
+                            else: # We have a single detection
+                                alert_pattern  =  sha256_hash(match['detection'] + match.get('ioc') + str(truncated_timestamp))
+                                if if_alert_exists(alerts_database, alert_pattern):
+                                    logger.debug("Redundant alert, skipping: {}".format(alert_pattern))
+                                    continue 
+                        
 
-                                    logger.debug(f"Alert for: {match}")
-                                except  Exception as e:  # Capture specific error details        
-                                    logger.error("Failed to parse JSON: {}, skipping. Error: {}".format(match, str(e)))
-                                    continue
-                                
-                                # At this stage, each remaining alert needs to be sent, if it is under the threshold!       
-                                if alerts_counter < max_alerts_counter:
-                                    logger.debug("Sending an alert for: {}".format(alert_pattern))
-                                    if alerts_counter == max_alerts_counter - 1:
-                                        if match.get('detections'): # In case we have multiple detections
-                                            match["detections"][-1]["detection"] += "\n\n*WARNING*: TOO MANY ALERTS, NOT SENDING MORE, CHECK UNICOR LOGS."
-                                        else:  #We have a single detection            
-                                            match['detection'] += "\n\n*WARNING*: TOO MANY ALERTS, NOT SENDING MORE, CHECK UNICOR LOGS."
-                                    
-                                    for alert_type, alert_conf in ctx.obj['CONFIG']['alerting'].items():
-                                        logger.debug("Alerting via {}".format(alert_type))
-                                        # Preparing and send alerts for specific destinations
-                                        if alert_type == "messaging_webhook":
-                                            unicor_alerting_utils.messaging_webhook_alerts(match, alerting_config['messaging_webhook'], alert_pattern, alerts_database, alerts_database_max_size, alert_type)
-                                        if alert_type == "telegram":
-                                            unicor_alerting_utils.messaging_webhook_alerts(match, alerting_config['telegram'], alert_pattern, alerts_database, alerts_database_max_size, alert_type)
-                                        if alert_type == "email":           
-                                            unicor_alerting_utils.email_alerts(match, alerting_config['email'], summary=False)
-                                if alerts_counter == max_alerts_counter:
-                                    logger.warning("Too many alerts to be sent, sent only {}".format(max_alerts_counter))
-                                alerts_counter += 1
+                            logger.debug(f"Alert for: {match}")
+                        except  Exception as e:  # Capture specific error details        
+                            logger.error("Failed to parse JSON: {}, skipping. Error: {}".format(match, str(e)))
+                            continue
+                        
+                        # At this stage, each remaining alert needs to be sent, if it is under the threshold!       
+                        if alerts_counter < max_alerts_counter:
+                            logger.debug("Sending an alert for: {}".format(alert_pattern))
+                            if alerts_counter == max_alerts_counter - 1:
+                                if match.get('detections'): # In case we have multiple detections
+                                    match["detections"][-1]["detection"] += "\n\n*WARNING*: TOO MANY ALERTS, NOT SENDING MORE, CHECK UNICOR LOGS."
+                                else:  #We have a single detection            
+                                    match['detection'] += "\n\n*WARNING*: TOO MANY ALERTS, NOT SENDING MORE, CHECK UNICOR LOGS."
+                            
+                            for alert_type, alert_conf in ctx.obj['CONFIG']['alerting'].items():
+                                logger.debug("Alerting via {}".format(alert_type))
+                                # Preparing and send alerts for specific destinations
+                                if alert_type == "messaging_webhook":
+                                    unicor_alerting_utils.messaging_webhook_alerts(match, alerting_config['messaging_webhook'], alert_pattern, alerts_database, alerts_database_max_size, alert_type)
+                                if alert_type == "telegram":
+                                    unicor_alerting_utils.messaging_webhook_alerts(match, alerting_config['telegram'], alert_pattern, alerts_database, alerts_database_max_size, alert_type)
+                                if alert_type == "email":           
+                                    unicor_alerting_utils.email_alerts(match, alerting_config['email'], summary=False)
+                        if alerts_counter == max_alerts_counter:
+                            logger.warning("Too many alerts to be sent, sent only {}".format(max_alerts_counter))
+                        alerts_counter += 1
 
-                                # Here we need to catch an exception.
-                                # If the request worked, then register the alert in our "database" to avoir duplicate alerts
-                                #register_new_alert(alerts_database, alerts_database_max_size, alert_pattern)
+                        # Here we need to catch an exception.
+                        # If the request worked, then register the alert in our "database" to avoir duplicate alerts
+                        #register_new_alert(alerts_database, alerts_database_max_size, alert_pattern)
 
                 except Exception as e:  # Capture specific error details        
                         logger.error("Failed to parse {}, skipping. Error: {}".format(file, str(e)))
                         continue
+                # Delete only if no exception. (everything went right... right?)
                 logger.debug("Deleting content of {}".format(file_path))
-                with open(file_path, 'w') as file:
-                    file.write("")  # Write an empty string to the file and automatically close it
+                file_path.unlink()
 
    # if not len(pending_alerts):
     #    logger.info("No alert to be sent.")
