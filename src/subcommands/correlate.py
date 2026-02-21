@@ -111,22 +111,43 @@ def correlate(ctx,
     if ( archive_event_files or retro_disco_lookup ):
         try:
             archive_dir = ctx.obj['CONFIG']['correlation']['archive_dir']
+            if ( not Path(archive_dir).is_dir() ):
+                logging.error("archive_dir %s is not a directory or does not exist (symlinks allowed)" % ( archive_dir ))
+                exit(1)
         except KeyError:
             logging.error("Missing from config file: correlation -> archive_dir")
-            exit(1)
-        if ( not Path(archive_dir).is_dir() ):
-            logging.error("archive_dir %s is not a directory or does not exist (symlinks allowed)" % ( archive_dir ))
             exit(1)
 
     # Make sure the fail_dir is set up and usable.
     fail_dir = None
     try:
         fail_dir = ctx.obj['CONFIG']['correlation']['fail_dir']
+        if ( not Path(fail_dir).is_dir() ):
+            logging.error("fail_dir %s is not a directory or does not exist (symlinks allowed)" % ( fail_dir ))
+            exit(1)
     except KeyError:
         logging.error("Missing from config file: correlation -> fail_dir")
         exit(1)
-    if ( not Path(fail_dir).is_dir() ):
-        logging.error("fail_dir %s is not a directory or does not exist (symlinks allowed)" % ( fail_dir ))
+
+    # Make sure the lists of malicious domains and ips exist.
+    malicious_domains_file = None
+    try:
+        malicious_domains_file = correlation_config['malicious_domains_file']
+        if ( not Path(malicious_domains_file).is_file() ):
+            logging.error("malicious_domains_file %s is not a file or does not exist" % ( malicious_domains_file ))
+            exit(1)
+    except KeyError:
+        logging.error("Missing config/option: malicious_domains_file")
+        exit(1)
+
+    malicious_ips_file = None
+    try:
+        malicious_ips_file = correlation_config['malicious_ips_file']
+        if ( not Path(malicious_ips_file).is_file() ):
+            logging.error("malicious_ips_file %s is not a file or does not exist" % ( malicious_ips_file ))
+            exit(1)
+    except KeyError:
+        logging.error("Missing config/option: malicious_ips_file")
         exit(1)
 
     # Set up MISP connections
@@ -139,46 +160,18 @@ def correlate(ctx,
     # Set up domain and IP lists to alert on, in domain_attributes and ip_attributes
     domain_attributes = {}
     domain_attributes_metadata = {}
-    if 'malicious_domains_file' in correlation_config and correlation_config['malicious_domains_file'] and not retro_disco_lookup:
-        domains_iter, _ = unicor_file_utils.read_file(Path(correlation_config['malicious_domains_file']))
-        for domain in domains_iter:
-            domain_attributes.update({ domain.strip(): 1 })
-    else:
-        for misp, args in misp_connections:
-            attributes = misp.search(controller='attributes', type_attribute='domain', to_ids=1, pythonify=True, **args)
-            for attribute in attributes:
-                domain_attributes.update({ attribute.value: 1})
-                if retro_disco_lookup:
-                    if attribute.value in domain_attributes_metadata:
-                        if attribute.timestamp > domain_attributes_metadata[attribute.value]:
-                            domain_attributes_metadata[attribute.value] = attribute.timestamp
-                    else:
-                        domain_attributes_metadata[attribute.value] = attribute.timestamp
+    domains_iter, _ = unicor_file_utils.read_file(Path(correlation_config['malicious_domains_file']))
+    for domain in domains_iter:
+        domain_attributes.update({ domain.strip(): 1 })
 
     ip_attributes = netaddr.IPSet()
     ip_attributes_metadata = {}
-    if 'malicious_ips_file' in correlation_config and correlation_config['malicious_ips_file'] and not retro_disco_lookup:
-        ips_iter, _ = unicor_file_utils.read_file(Path(correlation_config['malicious_ips_file']))
-        for attribute in ips_iter:
-            try:
-                ip_attributes.add(attribute.strip())
-            except ValueError:
-                logging.warning("Invalid malicious IP value {}".format(attribute))
-    else:
-        for misp, args in misp_connections:
-            ips_iter = misp.search(controller='attributes', type_attribute=['ip-src','ip-dst'], to_ids=1, pythonify=True, **args)
-
-            for attribute in ips_iter:
-                try:
-                    ip_attributes.add(attribute.value)
-                    if retro_disco_lookup:
-                        if attribute.value in ip_attributes_metadata:
-                            if attribute.timestamp > ip_attributes_metadata[attribute.value]:
-                                ip_attributes_metadata[attribute.value] = attribute.timestamp
-                        else:
-                            ip_attributes_metadata[attribute.value] = attribute.timestamp
-                except ValueError:
-                    logging.warning("Invalid malicious IP value {}".format(attribute.value))
+    ips_iter, _ = unicor_file_utils.read_file(Path(correlation_config['malicious_ips_file']))
+    for attribute in ips_iter:
+        try:
+            ip_attributes.add(attribute.strip())
+        except ValueError:
+            logging.warning("Invalid malicious IP value {}".format(attribute))
 
     logger.debug("Correlating with {} domains and {} ips".format(len(domain_attributes), len(ip_attributes.iter_cidrs())))
     
@@ -201,7 +194,7 @@ def correlate(ctx,
         # To avoid duplicating code, we'll prepend the archive dir if needed.
         # The files in the archive dir must not be archived.
         processing_archive_dir = ( file == archive_dir )
-
+        logger.debug("Processing input dir: %s, is_archive_dir=%s" % ( file, processing_archive_dir ))
         file_path = Path(file)
         file_paths = [file_path] if file_path.is_file() else file_path.rglob('*')
         for path in file_paths:

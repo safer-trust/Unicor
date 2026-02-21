@@ -60,6 +60,18 @@ def alert(ctx,
     else:
         files = kwargs.get('files')
     
+    # Make sure the alerts_database actually exists.
+    try:
+        if ( not Path(alerts_database).exists() ):
+            with open(alerts_database, 'w') as file:
+                pass
+        if ( not Path(alerts_database).is_file() ):
+            logger.error("Alerts database file %s exists but is not a file." % ( alerts_database ))
+            exit(1)
+    except Exception as e:
+        print("Error creating alerts database file %s: %s" % ( alerts_database, e))
+        exit(1)
+
     # Loading the list of IOCs currently valid
     malicious_iocs = set()
     for path in (
@@ -80,7 +92,8 @@ def alert(ctx,
             # Processing each file in the directory
             if file_path.is_file():
                 alerts, _ =  unicor_file_utils.read_file(file_path)
-                logger.info("{} alerts to be processed in {}".format(len(alerts), file_path))  
+                # this is an iterator which is not guaranteed to have a length or size.
+                #logger.info("{} alerts to be processed in {}".format(len(alerts), file_path))  
                 # Processing each alert in each file                    
                 try: # Going through each of the alerts
                     

@@ -39,7 +39,7 @@ class JsonFileReader:
             if ( line == b"" ):
                 self.saw_end = True
                 raise StopIteration
-            line = line.decode('utf-8').replace("'", '"')
+            line = line.decode('utf-8')
             try:
                 json_obj = json.loads(line)
                 # might use this for back-tracking a file that's being written while it's being read. TBD
