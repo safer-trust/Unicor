@@ -19,8 +19,7 @@ RUN \
 # do unicor setup
 FROM pythonpkgs AS unicor
 COPY src /unicor
-COPY templates /unicor/
-COPY config/config.yml /etc/unicor/config.yml.example
+COPY templates/* /etc/unicor/
 COPY container /
 RUN \
   rm -rf /unicor/dist && \

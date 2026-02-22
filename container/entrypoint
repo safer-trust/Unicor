@@ -31,13 +31,21 @@ for D in \
   fi
 done
 
-# If there's no config file, make one
+# We can generate a config file if it's missing.
+# Some use cases might favor always generating one, even if it's there already.
+REBUILD_CONFIG=0
+if [ ! -f /persistent/unicor/config.yml ]; then
+  REBUILD_CONFIG=1
+fi
+
+if [ "${UNICOR_ALWAYS_REBUILD_CONFIG+z}" = "z" ] && [ "${UNICOR_ALWAYS_REBUILD_CONFIG}" = "y" ]; then
+  REBUILD_CONFIG=1
+fi
+
 # Note: we have a symlink at the default location pointing at
 # /persistent so that it can be replaced easily.
-# The file may contain secrets, so we don't want to build it from
-# the environment.
-if [ ! -f /persistent/unicor/config.yml ]; then
-  cp /etc/unicor/config.yml.example /persistent/unicor/config.yml
+if [ "${REBUILD_CONFIG}" = 1 ]; then
+  /render-config /etc/unicor/config-template.yml > /persistent/unicor/config.yml
   chown "${UNICOR_USER}" /persistent/unicor/config.yml
 fi
 

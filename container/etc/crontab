@@ -4,6 +4,6 @@
 # a tool for this that works nicely.
 
 50,20 * * * * unicor ( /usr/local/bin/unicor fetch-iocs ) >> /persistent/log/unicor-fetch-iocs.log 2>&1
-45,15 * * * * unicor ( /usr/local/bin/unicor correlate /var/dnscollector/matches ) >> /persistent/log/unicor-correlate.log 2>&1
+45,15 * * * * unicor ( /usr/local/bin/unicor correlate ) >> /persistent/log/unicor-correlate.log 2>&1
 0,30 * * * * root /usr/bin/logrotate /etc/logrotate.conf
 

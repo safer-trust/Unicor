@@ -66,19 +66,46 @@ The entrypoint expects persistent storage at `/persistent` in the container. To 
 alerts whenever the container is restarted, make sure non-ephemeral storage is mounted there. A bind-mount or
 persistent volume claim will work nicely.
 
-You'll need a method to get a `config.yml` and inputs into this location, which can be accomplished by one or more of:
-- Copy into the bind-mounted directory.
-- Use `podman cp`.
-- Use a sidecar container that mounts the same storage.
-- Drop your own scripts into the container.
-- Be creative! Your solution should meet your needs, not our idea of correct.
-
 By default the container will exec `crond` in the foreground, which in turn runs `unicor` according to `/etc/crontab`.
 Otherwise extra args to `podman run ...` are passed directly to `unicor`.
 Use `podman run ... sh` to start a shell instead.
 
 Note: The container will create a `unicor` account, and attempt to run unicor in that context, as opposed to `root`.
-Note 2: The entrypoint script will create a `/persistent/unicor/config.yml` file if none exists. It contains example content and is guaranteed to be useless as-is. It is up to you to decide how to put meaningful content there, but do keep in mind that it may contain your API tokens and webhook URLs, so don't use a configmap or do something creative with environment variables. It is okay to edit in-place.
+Note 2: The entrypoint script will create a `/persistent/unicor/config.yml` file if none exists. Use the environment variables below to influence its contents.
+
+#####  1.1.1 Environment Variables
+
+###### General
+`UNICOR_LOGGING_LEVEL` - The level of logging verbosity, default INFO.
+
+`UNICOR_MISP_DOMAIN` - The URL to the MISP instance.
+
+`UNICOR_MISP_API_KEY_FILE` - The path to a file in the container which contains the MISP API key on the first line, default `/run/secrets/misp_api_key`.
+
+`UNICOR_ALERT_DB_MAX_ENTRIES` - The maximum number of alerts suppressed due to being duplicates or already sent. Once this limit is exceeded, previous alerts may be sent if they are picked up by `unicor correlate`. Default is 300.
+
+`UNICOR_ALWAYS_REBUILD_CONFIG` - If defined and set to `y`, the `entrypoint` script will always rebuild the config file when the container (re)starts.
+
+`UNICOR_MAX_ALERTS_AT_A_TIME` - Maximum number of alerts to send during a `unicor alert` invocation. Default is 5.
+
+###### Webhook Alert
+`UNICOR_WEBHOOK_FILE` - The path to a file in the container which contains the webhook URL. Set this to enable alerting via webhook.
+
+`UNICOR_WEBHOOK_TEMPLATE_FILE` - The path to a file in the container which contains a jinja2 template for webhook alerts. Default is `/etc/unicor/webhook.template`.
+
+###### Telegram Alert
+`UNICOR_TELEGRAM_BOT_TOKEN_FILE` - The path to a file in the container which contains the Telegram bot token file. Set this to enable alerting via Telegram.
+
+`UNICOR_TELEGRAM_CHAT_ID` - The Telegram chat ID. Required if using Telegram.
+
+`UNICOR_TELEGRAM_TEMPLATE_FILE` - The path to a file in the container which contains a jinja2 template for telegram alerts. Default is `/etc/unicor/webhook.template`.
+
+##### 1.1.2 A Word on Secrets
+Environment variables are not a safe place for secrets. Not only are they propagated through the container's process tree, they may also be captured in the container config files and ultimately published accidentally.
+
+Because of these risks, we do not encourage constructs that put secrets in the container environment. Please use one of the following to get your secrets into files in the container:
+  - Container managment's secret-handling features.
+  - Bind-mount a file/directory in.
 
 #### 1.2 Repo installation
 
