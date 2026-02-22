@@ -13,7 +13,15 @@ UNICOR_USER=unicor
 # be written.
 # 
 # The same for several other directories.
-for D in /persistent /persistent/log /persistent/unicor /persistent/unicor/matches /persistent/unicor/alerts; do
+for D in \
+  /persistent \
+  /persistent/log \
+  /persistent/unicor \
+  /persistent/unicor/input \
+  /persistent/unicor/alerts \
+  /persistent/unicor/archive \
+  /persistent/unicor/state \
+  /persistent/unicor/fail ; do
   if [ ! -d "${D}" ]; then
     mkdir "${D}" || exit 1
   fi

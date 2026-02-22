@@ -100,11 +100,39 @@ def messaging_webhook_alerts(match, config, alert_pattern, alerts_database, aler
     logger.info(f"Alerting about: {match['uid'] + ': ' if 'uid' in match else ''}{alert_log}") 
     # SENDING!
     
-    if config.get('webhook'):
+    if ( config.get('webhook') or config.get('webhook_file') ):
+        # Load webhook
+        webhook_url = None
+
+        if ( config.get('webhook') and config.get('webhook_file') ):
+            logger.error("Both webhook and webhook_file config params set, please set only one.")
+            exit(1)
+
+        # load the webhook url from a secrets file if provided
+        if config.get('webhook_file'):
+            try:
+                with open(config.get('webhook_file'), 'r') as f:
+                    webhook_url = f.readline()
+                    webhook_url = webhook_url.strip()
+                if ( webhook_url is None or webhook_url == '' ):
+                    logger.error("The webhook_file %s is empty or could not be read" % ( config.get('webhook_file') ))
+                    exit(1)
+            except FileNotFoundError as e:
+                logger.error("Failure opening webhook_file %s: %s" % ( config.get('webhook_file'), e))
+                exit(1)
+        if config.get('webhook'):
+            webhook_url = config.get('webhook')
+            if ( webhook_url is None or webhook_url == '' ):
+                logger.error("The webhook config option is empty")
+                exit(1)
+        if webhook_url is None:
+            logger.error("Unable to load a webhook url.")
+            exit(1)
+
         payload = {"text": f"{msg}"}
         headers = {"Content-type": "application/json"}
         try:
-            response = requests.post(config['webhook'], headers=headers, json=payload)
+            response = requests.post(webhook_url, headers=headers, json=payload)
             logger.debug("Webhook: {} - {}".format(response.status_code, response.text))
             response.raise_for_status()  # This will raise an HTTPError if the response was an HTTP error
             # If the request worked, then register the alert in our "database" to avoir duplicate alerts
@@ -113,8 +141,33 @@ def messaging_webhook_alerts(match, config, alert_pattern, alerts_database, aler
             logger.warning("Webhook post failed: {}".format(e))
             
     if config.get('telegram_chat_id'):
+        # Load the telegram_bot_token from a secrets file
+        telegram_bot_token = None
+        if ( config.get('telegram_bot_token') and config.get('telegram_bot_token_file') ):
+            logger.error("Both telegram_bot_token and telegram_bot_token_file set, please choose only one.")
+            exit(1)
+        if ( config.get('telegram_bot_token') is None and config.get('telegram_bot_token_file') is None ):
+            logger.error("telegram_chat_id config option is set, but both telegram_bot_token and telegram_bot_token_file are missing")
+            exit(1)
+        if config.get('telegram_bot_token_file'):
+            try:
+                with open(config.get('telegram_bot_token_file'), 'r') as f:
+                    telegram_bot_token = f.readline()
+                    telegram_bot_token = telegram_bot_token.strip()
+                if ( telegram_bot_token is None or telegram_bot_token == '' ):
+                    logger.error("The telegram_bot_token_file %s is empty or could not be read" % ( config.get('telegram_bot_token_file') ))
+                    exit(1)
+            except FileNotFoundError as e:
+                logger.error("Failure opening telegram_bot_token_file %s: %s" % ( config.get('telegram_bot_token_file'), e))
+                exit(1)
+        if config.get('telegram_bot_token'):
+            telegram_bot_token = config.get('telegram_bot_token')
+            if ( telegram_bot_token is None or telegram_bot_token == '' ):
+                logger.error("The webhook config option is empty")
+                exit(1)
+
         payload = {'chat_id': config['telegram_chat_id'], 'text': msg}
-        telegram_url = f"https://api.telegram.org/bot{config['telegram_bot_token']}/sendMessage"
+        telegram_url = f"https://api.telegram.org/bot{telegram_bot_token}/sendMessage"
 
         try:
             response = requests.post(telegram_url, data=payload)

@@ -19,15 +19,13 @@ RUN \
 # do unicor setup
 FROM pythonpkgs AS unicor
 COPY src /unicor
-COPY templates/* /etc/unicor
+COPY templates /unicor/
 COPY config/config.yml /etc/unicor/config.yml.example
 COPY container /
 RUN \
   rm -rf /unicor/dist && \
   chmod 755 /usr/local/bin/unicor && \
   ln -s /tmp /var/run && \
-  ln -s /persistent/unicor /var/ && \
-  ln -s /persistent/unicor/config.yml /etc/unicor/config.yml 
 
 VOLUME /persistent
 CMD [ "cron" ]
