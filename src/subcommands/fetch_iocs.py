@@ -5,6 +5,7 @@ from pymisp import PyMISP
 from pathlib import Path
 from utils import file as unicor_file_utils
 from utils import time as unicor_time_utils
+from utils import secret
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +42,8 @@ def fetch_iocs(ctx,
     # Set up MISP connections
     misp_connections = []
     for misp_conf in ctx.obj['CONFIG']["misp_servers"]:
-        misp = PyMISP(misp_conf['domain'], misp_conf['api_key'], misp_conf['verify_ssl'], debug=misp_conf['debug'])
+        api_key = secret.load_from_file_or_config(misp_conf, 'api_key', logger)
+        misp = PyMISP(misp_conf['domain'], api_key, misp_conf['verify_ssl'], debug=misp_conf['debug'])
         if misp:
             misp_connections.append((misp, misp_conf['args'], misp_conf['ioc_stagging']))
 

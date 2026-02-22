@@ -13,6 +13,7 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from utils.time import parse_rfc3339_ns
 from datetime import timedelta
+from utils import secret
 
 logger = logging.getLogger(__name__)
 
@@ -99,36 +100,10 @@ def messaging_webhook_alerts(match, config, alert_pattern, alerts_database, aler
     alert_log = match.get("detections", [{}])[0].get("detection", match.get("detection"))  
     logger.info(f"Alerting about: {match['uid'] + ': ' if 'uid' in match else ''}{alert_log}") 
     # SENDING!
-    
-    if ( config.get('webhook') or config.get('webhook_file') ):
-        # Load webhook
-        webhook_url = None
 
-        if ( config.get('webhook') and config.get('webhook_file') ):
-            logger.error("Both webhook and webhook_file config params set, please set only one.")
-            exit(1)
-
-        # load the webhook url from a secrets file if provided
-        if config.get('webhook_file'):
-            try:
-                with open(config.get('webhook_file'), 'r') as f:
-                    webhook_url = f.readline()
-                    webhook_url = webhook_url.strip()
-                if ( webhook_url is None or webhook_url == '' ):
-                    logger.error("The webhook_file %s is empty or could not be read" % ( config.get('webhook_file') ))
-                    exit(1)
-            except FileNotFoundError as e:
-                logger.error("Failure opening webhook_file %s: %s" % ( config.get('webhook_file'), e))
-                exit(1)
-        if config.get('webhook'):
-            webhook_url = config.get('webhook')
-            if ( webhook_url is None or webhook_url == '' ):
-                logger.error("The webhook config option is empty")
-                exit(1)
-        if webhook_url is None:
-            logger.error("Unable to load a webhook url.")
-            exit(1)
-
+    # Webhook?
+    webhook_url = secret.load_from_file_or_config(config, 'webhook', logger, allow_neither=True)
+    if ( webhook_url is not None):
         payload = {"text": f"{msg}"}
         headers = {"Content-type": "application/json"}
         try:
@@ -139,36 +114,12 @@ def messaging_webhook_alerts(match, config, alert_pattern, alerts_database, aler
             register_new_alert(alerts_database, alerts_database_max_size, alert_pattern)
         except requests.exceptions.RequestException as e:
             logger.warning("Webhook post failed: {}".format(e))
-            
+    
+    # Telegram?
     if config.get('telegram_chat_id'):
-        # Load the telegram_bot_token from a secrets file
-        telegram_bot_token = None
-        if ( config.get('telegram_bot_token') and config.get('telegram_bot_token_file') ):
-            logger.error("Both telegram_bot_token and telegram_bot_token_file set, please choose only one.")
-            exit(1)
-        if ( config.get('telegram_bot_token') is None and config.get('telegram_bot_token_file') is None ):
-            logger.error("telegram_chat_id config option is set, but both telegram_bot_token and telegram_bot_token_file are missing")
-            exit(1)
-        if config.get('telegram_bot_token_file'):
-            try:
-                with open(config.get('telegram_bot_token_file'), 'r') as f:
-                    telegram_bot_token = f.readline()
-                    telegram_bot_token = telegram_bot_token.strip()
-                if ( telegram_bot_token is None or telegram_bot_token == '' ):
-                    logger.error("The telegram_bot_token_file %s is empty or could not be read" % ( config.get('telegram_bot_token_file') ))
-                    exit(1)
-            except FileNotFoundError as e:
-                logger.error("Failure opening telegram_bot_token_file %s: %s" % ( config.get('telegram_bot_token_file'), e))
-                exit(1)
-        if config.get('telegram_bot_token'):
-            telegram_bot_token = config.get('telegram_bot_token')
-            if ( telegram_bot_token is None or telegram_bot_token == '' ):
-                logger.error("The webhook config option is empty")
-                exit(1)
-
+        telegram_bot_token = secret.load_from_file_or_config(config, 'telegram_bot_token', logger)
         payload = {'chat_id': config['telegram_chat_id'], 'text': msg}
         telegram_url = f"https://api.telegram.org/bot{telegram_bot_token}/sendMessage"
-
         try:
             response = requests.post(telegram_url, data=payload)
             logger.debug("Telegram: {} - {}".format(response.status_code, response.text))
