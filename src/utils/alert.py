@@ -18,26 +18,48 @@ from utils import secret
 logger = logging.getLogger(__name__)
 
 # Add a hash of new alerts in a file if they are new
-def register_new_alert(alerts_database, alerts_database_max_size, alert):
+def register_new_alert(alerts_database, alerts_database_max_size, match):
+
+    # The match contains one or more detections, each one has an alert_pattern stashed in it during duplicate-checking.
+    # We'll need a way to centrally convert detections to a hash key, but this will do for now.
+    alert_patterns = []
+    if match.get('detections'):
+        for d in match.get('detections'):
+            alert_patterns.append(d['alert_pattern'])
+    if match.get('detection'):
+        alert_patterns.append(match['detection']['alert_pattern'])
+
     try:
-      with open(alerts_database, 'r+') as file:
-        hashes = file.read().splitlines()
-        if alert not in hashes:
-            logger.debug("Registering new alert in {} : {}".format(alerts_database, alert))
+        with open(alerts_database, 'r') as file:
+            hashes = file.read().splitlines()
+      
+        alert_patterns_to_add = []
+        for ap in alert_patterns:
+            if ap not in hashes:
+                alert_patterns_to_add.append(ap)
+
+        if len(alert_patterns_to_add) > 0:
+            logger.debug("Registering new alert patterns in {} : {}".format(alerts_database, alert_patterns_to_add))
             try:
                 # Trim the database if it is bigger than its max size and add our alert 
                 if len(hashes) >= alerts_database_max_size:
                     hashes = hashes[-(alerts_database_max_size - 1):]
-                hashes.append(alert)
-                file.seek(0)
-                file.truncate()
-                file.write('\n'.join(hashes) + '\n')
-                return True
+                hashes += alert_patterns
+                # Re-trim if we added too many
+                if len(hashes) >= alerts_database_max_size:
+                    hashes = hashes[-(alerts_database_max_size - 1):]
+
+                # Write new version of db
+                with open(alerts_database, 'r+') as file:
+                    file.seek(0)
+                    file.truncate()
+                    file.write('\n'.join(hashes) + '\n')
+                    return True
             except IOError as e:
                 logger.warning("Error writing to {}: {}".format(alerts_database.e))
                 return False
             return True
-      return False
+        return False
     except IOError as e:
         logger.warning("Error accessing file {}: {}".format(alerts_database.e))
         return False
@@ -85,14 +107,14 @@ def build_msg(path, match):
     msg = parse_msg(path, context)
     return msg
 
-def messaging_webhook_alerts(match, config, alert_pattern, alerts_database, alerts_database_max_size, alert_type):
+def messaging_webhook_alerts(match, config, alerts_database, alerts_database_max_size, alert_type):
     #logger.debug("messaging_webhook hook {}".format(config['webhook']))
 #    if 'correlation' in match and 'misp' in match['correlation'] and 'events' in match['correlation']['misp']:
     if match.get('correlation', {}).get('misp', {}).get('events'):
         # Let's build a message
         msg = build_msg(config['template'], match)            
     else:
-        logger.error("No MISP correlation data found for {}".format(alert_pattern))
+        logger.error("No MISP correlation data found for {}".format(match['ioc']))
         # Alerting anyway, without any MISP context
         msg = build_msg(config['template'], match)            
     logger.debug("MSG: {}".format(msg))
@@ -111,7 +133,7 @@ def messaging_webhook_alerts(match, config, alert_pattern, alerts_database, aler
             logger.debug("Webhook: {} - {}".format(response.status_code, response.text))
             response.raise_for_status()  # This will raise an HTTPError if the response was an HTTP error
             # If the request worked, then register the alert in our "database" to avoir duplicate alerts
-            register_new_alert(alerts_database, alerts_database_max_size, alert_pattern)
+            register_new_alert(alerts_database, alerts_database_max_size, match)
         except requests.exceptions.RequestException as e:
             logger.warning("Webhook post failed: {}".format(e))
     
@@ -124,7 +146,7 @@ def messaging_webhook_alerts(match, config, alert_pattern, alerts_database, aler
             response = requests.post(telegram_url, data=payload)
             logger.debug("Telegram: {} - {}".format(response.status_code, response.text))
             response.raise_for_status()  # This will raise an HTTPError if the response was an HTTP error
-            register_new_alert(alerts_database, alerts_database_max_size, alert_pattern)
+            register_new_alert(alerts_database, alerts_database_max_size, match)
         except requests.exceptions.RequestException as e:
             logger.warning("Telegram post failed: {}".format(e))
 

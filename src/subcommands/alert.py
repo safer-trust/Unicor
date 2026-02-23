@@ -69,7 +69,7 @@ def alert(ctx,
             logger.error("Alerts database file %s exists but is not a file." % ( alerts_database ))
             exit(1)
     except Exception as e:
-        print("Error creating alerts database file %s: %s" % ( alerts_database, e))
+        logger.error("Error creating alerts database file %s: %s" % ( alerts_database, e))
         exit(1)
 
     # Loading the list of IOCs currently valid
@@ -126,31 +126,41 @@ def alert(ctx,
                             
                             if match.get('detections'): # We have multiple detections
                             
-                                # Go through each detection, and "pop" out the redundant entries
-                                for i in reversed(range(len(match["detections"]))):
-                                    detection_entry = match["detections"][i]
+                                # Let's build a new list of detections with duplicates removed.
+                                # Messing with the source list in-place can do strange things.
+                                new_detections = [] # detections are a list, not a set
+                                for detection_entry in match["detections"]:
                                     alert_pattern = sha256_hash(detection_entry["detection"] + match.get('ioc') + str(truncated_timestamp))
                                     
+                                    # skip duplicates
                                     if (if_alert_exists(alerts_database, alert_pattern) or alert_pattern in all_alert_patterns):
                                         logger.debug("Duplicate alert: {}".format(detection_entry["detection"] + match.get('ioc') + str(truncated_timestamp)))
-                                        # Remove redundant detection in place
-                                        match["detections"].pop(i)
-                                    else:
-                                        logger.debug("New alert: {}".format(detection_entry["detection"] + match.get('ioc') + str(truncated_timestamp)))
-                                    all_alert_patterns.add(alert_pattern)
+                                        continue
                                     
+                                    # not skipped, so add to new detections list
+                                    logger.debug("New alert: {}".format(detection_entry["detection"] + match.get('ioc') + str(truncated_timestamp)))
+                                    all_alert_patterns.add(alert_pattern)
+                                    # We'll need a central place to turn a detection into a hash key, but we can store it here for now.
+                                    detection_entry["alert_pattern"] = alert_pattern
+                                    new_detections.append(detection_entry)
+                                
+                                # Drop in the new list of detections we should alert on
+                                match["detections"] = new_detections
+
                                 # Re-flatten the detections in case we went from multiple detections to a single detection due to duplicates
                                 match = unicor_correlation_utils.flatten_detections(match)
-                                # Have all the detections in this alert been seen before?
+
+                                # Nothing to do if all the detections in this alert been seen before
                                 if not (match.get("detections") or match.get("detection")):
                                     continue
-                                #
+
                             else: # We have a single detection
                                 alert_pattern  =  sha256_hash(match['detection'] + match.get('ioc') + str(truncated_timestamp))
                                 if if_alert_exists(alerts_database, alert_pattern):
                                     logger.debug("Redundant alert, skipping: {}".format(alert_pattern))
                                     continue 
-                        
+                                # We'll need a central place to turn a detection into a hash key, but we can store it here for now.
+                                match['detection']['alert_pattern'] = alert_pattern
 
                             logger.debug(f"Alert for: {match}")
                         except  Exception as e:  # Capture specific error details        
@@ -159,7 +169,7 @@ def alert(ctx,
                         
                         # At this stage, each remaining alert needs to be sent, if it is under the threshold!       
                         if alerts_counter < max_alerts_counter:
-                            logger.debug("Sending an alert for: {}".format(alert_pattern))
+                            logger.debug("Sending an alert for IOC: {}".format(match['ioc']))
                             if alerts_counter == max_alerts_counter - 1:
                                 if match.get('detections'): # In case we have multiple detections
                                     match["detections"][-1]["detection"] += "\n\n*WARNING*: TOO MANY ALERTS, NOT SENDING MORE, CHECK UNICOR LOGS."
@@ -170,9 +180,9 @@ def alert(ctx,
                                 logger.debug("Alerting via {}".format(alert_type))
                                 # Preparing and send alerts for specific destinations
                                 if alert_type == "messaging_webhook":
-                                    unicor_alerting_utils.messaging_webhook_alerts(match, alerting_config['messaging_webhook'], alert_pattern, alerts_database, alerts_database_max_size, alert_type)
+                                    unicor_alerting_utils.messaging_webhook_alerts(match, alerting_config['messaging_webhook'], alerts_database, alerts_database_max_size, alert_type)
                                 if alert_type == "telegram":
-                                    unicor_alerting_utils.messaging_webhook_alerts(match, alerting_config['telegram'], alert_pattern, alerts_database, alerts_database_max_size, alert_type)
+                                    unicor_alerting_utils.messaging_webhook_alerts(match, alerting_config['telegram'], alerts_database, alerts_database_max_size, alert_type)
                                 if alert_type == "email":           
                                     unicor_alerting_utils.email_alerts(match, alerting_config['email'], summary=False)
                         if alerts_counter == max_alerts_counter:
