@@ -25,7 +25,8 @@ RUN \
   rm -rf /unicor/dist && \
   chmod 755 /usr/local/bin/unicor && \
   ln -s /tmp /var/run && \
-  ln -s /persistent/unicor/config.yml /etc/unicor/config.yml 
+  ln -s /persistent/unicor/config.yml /etc/unicor/config.yml && \
+  chmod 644 /etc/crontab
 
 
 VOLUME /persistent
