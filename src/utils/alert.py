@@ -27,7 +27,7 @@ def register_new_alert(alerts_database, alerts_database_max_size, match):
         for d in match.get('detections'):
             alert_patterns.append(d['alert_pattern'])
     if match.get('detection'):
-        alert_patterns.append(match['detection']['alert_pattern'])
+        alert_patterns.append(match['alert_pattern'])
 
     try:
         with open(alerts_database, 'r') as file:
