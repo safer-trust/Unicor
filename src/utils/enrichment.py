@@ -74,19 +74,14 @@ def enrich_logs(logs, misp_connections, is_minified):
 
         # Generic mode
         else:
-            if log.get('detections'): # We have multiple detections on the same IOC
-                detections =  log['detections']   
-            else: # We have a single detection
-                timestamp = log['timestamp_rfc3339ns']
-                detection = log['detection']
-
+            detections =  log['detections']   
             ioc = log['ioc']
             if log.get('ioc_type') == "domain":
                 domain = log['ioc']
             if log.get('ioc_type') == "ip":
                 ips.append(log['ioc'])
 
-         # Now we know what domains and/or IPs we need to look up in MISP
+        # Now we know what domains and/or IPs we need to look up in MISP
         misp_events = []
         encountered_events = set() 
         for misp_connection, args in misp_connections:
@@ -154,32 +149,15 @@ def enrich_logs(logs, misp_connections, is_minified):
         # Limit alerts context to 3 MISP events maximum
         misp_events = misp_events[-3:]
  
-        if detections: # We have multiple detections on the same IOC
-            enriched_results.append(
-            {
-                "ioc": ioc,
-                "detections": detections,
-                "correlation": {
-                    "misp": {
-                        "events": misp_events
-                    }
+        enriched_results.append(
+        {
+            "ioc": ioc,
+            "detections": detections,
+            "correlation": {
+                "misp": {
+                    "events": misp_events
                 }
             }
+        }
         )
-        else: # We have a single detection
- 
-            enriched_results.append(
-                {
-                    "timestamp": timestamp,
-                    "ioc": ioc,
-                    "detection": detection,
-                    "correlation": {
-                        "misp": {
-                            "events": misp_events
-                        }
-                    }
-                }
-            )
-
-
     return enriched_results

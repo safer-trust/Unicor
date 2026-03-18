@@ -124,26 +124,3 @@ def correlate_file(file_iter, domain_attributes, ip_attributes, domain_attribute
     total_matches = correlate_events(file_iter, (domain_attributes, ip_attributes, domain_attributes_metadata, ip_attributes_metadata, is_minified))
     return total_matches
 
-def flatten_detections(matches):
-    single_input = isinstance(matches, dict) and "detections" in matches
-
-    iterable = (
-        [matches] if single_input
-        else matches.values() if isinstance(matches, dict)
-        else matches
-    )
-
-    flattened = []
-
-    for data in iterable:
-        detections = data.get("detections", [])
-
-        if len(detections) == 1:
-            merged = {**data, **detections[0]}
-            merged.pop("detections", None)
-            flattened.append(merged)
-        else:
-            flattened.append(data)
-
-    # Preserve original input type
-    return flattened[0] if single_input else flattened

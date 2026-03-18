@@ -26,8 +26,6 @@ def register_new_alert(alerts_database, alerts_database_max_size, match):
     if match.get('detections'):
         for d in match.get('detections'):
             alert_patterns.append(d['alert_pattern'])
-    if match.get('detection'):
-        alert_patterns.append(match['alert_pattern'])
 
     try:
         with open(alerts_database, 'r') as file:
@@ -93,16 +91,9 @@ def parse_msg(path, variables):
     return msg
 
 def build_msg(path, match):
-    # Load all alerts in one template
-    timestamp = ""
-    if not match.get('detections'): # We have a single detection, we need to extract + format timestamp
-        dt = datetime.strptime(
-            (match.get("timestamp") or match.get("timestamp_rfc3339ns"))[:26], "%Y-%m-%dT%H:%M:%S.%f")
-        timestamp =  dt.strftime("%Y-%m-%d %H:%M:%SZ")
     context = {
         'events': match.get('correlation', {}).get('misp', {}).get('events', []),
         'match': match,
-        'timestamp': timestamp,
     }
     msg = parse_msg(path, context)
     return msg

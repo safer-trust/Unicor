@@ -13,6 +13,7 @@ import time
 import jsonlines
 from pymisp import PyMISP
 from pathlib import Path
+import traceback 
 import shutil
 
 logger = logging.getLogger(__name__)
@@ -112,55 +113,38 @@ def alert(ctx,
                         # DEDUPLICATION and REPEATING alerts management
                         
                         # Making a string from the timestamp that should cover a 24h window
-                        if match.get('detections'): # In case we have multiple detection, we take the first
-                            first_timestamp = min(d["timestamp_rfc3339ns"] for d in match["detections"])
-                            dt = datetime.strptime(first_timestamp[:26], "%Y-%m-%dT%H:%M:%S.%f")
-                        else: # We have a single detection
-                            dt = datetime.strptime(match['timestamp'][:26], "%Y-%m-%dT%H:%M:%S.%f")
+                        first_timestamp = min(d["timestamp_rfc3339ns"] for d in match["detections"])
+                        dt = datetime.strptime(first_timestamp[:26], "%Y-%m-%dT%H:%M:%S.%f")
                         epoch_time = int(time.mktime(dt.timetuple()))
                         truncated_timestamp = epoch_time - (epoch_time % 86400)
                         
                         # Go through each candidate alert, and check if we have seen it in that time window
                         try:
-                            # One alert can have one or multiple detections
                             
-                            if match.get('detections'): # We have multiple detections
-                            
-                                # Let's build a new list of detections with duplicates removed.
-                                # Messing with the source list in-place can do strange things.
-                                new_detections = [] # detections are a list, not a set
-                                for detection_entry in match["detections"]:
-                                    alert_pattern = sha256_hash(detection_entry["detection"] + match.get('ioc') + str(truncated_timestamp))
-                                    
-                                    # skip duplicates
-                                    if (if_alert_exists(alerts_database, alert_pattern) or alert_pattern in all_alert_patterns):
-                                        logger.debug("Duplicate alert: {}".format(detection_entry["detection"] + match.get('ioc') + str(truncated_timestamp)))
-                                        continue
-                                    
-                                    # not skipped, so add to new detections list
-                                    logger.debug("New alert: {}".format(detection_entry["detection"] + match.get('ioc') + str(truncated_timestamp)))
-                                    all_alert_patterns.add(alert_pattern)
-                                    # We'll need a central place to turn a detection into a hash key, but we can store it here for now.
-                                    detection_entry["alert_pattern"] = alert_pattern
-                                    new_detections.append(detection_entry)
+                            # Let's build a new list of detections with duplicates removed.
+                            # Messing with the source list in-place can do strange things.
+                            new_detections = [] # detections are a list, not a set
+                            for detection_entry in match["detections"]:
+                                alert_pattern = sha256_hash(detection_entry["detection"] + match.get('ioc') + str(truncated_timestamp))
                                 
-                                # Drop in the new list of detections we should alert on
-                                match["detections"] = new_detections
-
-                                # Re-flatten the detections in case we went from multiple detections to a single detection due to duplicates
-                                match = unicor_correlation_utils.flatten_detections(match)
-
-                                # Nothing to do if all the detections in this alert been seen before
-                                if not (match.get("detections") or match.get("detection")):
+                                # skip duplicates
+                                if (if_alert_exists(alerts_database, alert_pattern) or alert_pattern in all_alert_patterns):
+                                    logger.debug("Duplicate alert: {}".format(detection_entry["detection"] + match.get('ioc') + str(truncated_timestamp)))
                                     continue
-
-                            else: # We have a single detection
-                                alert_pattern  =  sha256_hash(match['detection'] + match.get('ioc') + str(truncated_timestamp))
-                                if if_alert_exists(alerts_database, alert_pattern):
-                                    logger.debug("Redundant alert, skipping: {}".format(alert_pattern))
-                                    continue 
+                                    
+                                # not skipped, so add to new detections list
+                                logger.debug("New alert: {}".format(detection_entry["detection"] + match.get('ioc') + str(truncated_timestamp)))
+                                all_alert_patterns.add(alert_pattern)
                                 # We'll need a central place to turn a detection into a hash key, but we can store it here for now.
-                                match['detection']['alert_pattern'] = alert_pattern
+                                detection_entry["alert_pattern"] = alert_pattern
+                                new_detections.append(detection_entry)
+                                
+                            # Drop in the new list of detections we should alert on
+                            match["detections"] = new_detections
+
+                            # Nothing to do if all the detections in this alert been seen before
+                            if not (match.get("detections") or match.get("detection")):
+                                continue
 
                             logger.debug(f"Alert for: {match}")
                         except  Exception as e:  # Capture specific error details        
@@ -171,10 +155,7 @@ def alert(ctx,
                         if alerts_counter < max_alerts_counter:
                             logger.debug("Sending an alert for IOC: {}".format(match['ioc']))
                             if alerts_counter == max_alerts_counter - 1:
-                                if match.get('detections'): # In case we have multiple detections
-                                    match["detections"][-1]["detection"] += "\n\n*WARNING*: TOO MANY ALERTS, NOT SENDING MORE, CHECK UNICOR LOGS."
-                                else:  #We have a single detection            
-                                    match['detection'] += "\n\n*WARNING*: TOO MANY ALERTS, NOT SENDING MORE, CHECK UNICOR LOGS."
+                                match["detections"][-1]["detection"] += "\n\n*WARNING*: TOO MANY ALERTS, NOT SENDING MORE, CHECK UNICOR LOGS."
                             
                             for alert_type, alert_conf in ctx.obj['CONFIG']['alerting'].items():
                                 logger.debug("Alerting via {}".format(alert_type))
@@ -194,6 +175,7 @@ def alert(ctx,
                         #register_new_alert(alerts_database, alerts_database_max_size, alert_pattern)
 
                 except Exception as e:  # Capture specific error details        
+                        traceback.print_exception(e)
                         logger.error("Failed to parse {}, skipping. Error: {}".format(file, str(e)))
                         continue
                 # Delete only if no exception. (everything went right... right?)
