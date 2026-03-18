@@ -289,7 +289,7 @@ def correlate(ctx,
         # Write full enriched matches to matches.json
 
         to_output = enriched + enriched_minified
-        with jsonlines.open(Path(correlation_config['output_dir'], "matches.json"), mode='a') as writer:
+        with jsonlines.open(Path(correlation_config['output_dir'], file_nocollide_prefix() + "_matches.json"), mode='a') as writer:
             for document in to_output:
                 writer.write(document)
 
