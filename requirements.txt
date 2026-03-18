@@ -7,4 +7,5 @@ pymisp==2.5.4
 pytz==2024.1
 PyYAML==6.0.2
 Requests==2.32.3
-setuptools==52.0.0
+netaddr>=0.8.0
+#setuptools==52.0.0

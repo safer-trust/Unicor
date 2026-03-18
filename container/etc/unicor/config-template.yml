@@ -1,0 +1,66 @@
+logging_level: "{{ UNICOR_LOGGING_LEVEL|default('INFO') }}" # INFO is recommended
+misp_servers:
+ - domain: "{{ UNICOR_MISP_DOMAIN|default('__ SET ENV UNICOR_MISP_DOMAIN __') }}"
+   api_key_file: "{{ UNICOR_MISP_API_KEY_FILE|default('/run/secrets/misp_api_key') }}"
+   verify_ssl: True # Switch to false to debug, stick to True in production
+   debug: False 
+   # misp.search() arguments
+   args:
+     enforce_warninglist: True 
+   ioc_stagging:
+     - tags:
+         - "generic"
+       max_age:
+        # Date in MISP DateRestSearchFilter format [S,M,h,d,w,m,Y] or timestamp %Y-%m-%d %H:%M:%S
+         ioc_date: 10d
+     - tags:
+         - "apt"
+         - "tlp:amber"
+       max_age:
+         ioc_date: 1Y # 1 year of "tlp:amber" MISP IOCs
+     - tags:
+         - "SAFER"
+       max_age:
+         ioc_date: "2022-12-25 12:00:00" # All IOCs from after Xmas 2022 with the "SAFER" tag 
+
+correlation: # use this if no files are defined from commmand line
+  input_dir: /persistent/unicor/input # This is were JSON input from dns-collector, Zeek, etc. goes
+  output_dir: /persistent/unicor/alerts # Unicor correlate will produce alerts to be sent here.
+  archive_dir: /persistent/unicor/archive # Input is saved here after processing for retroactive lookup.
+  fail_dir: /persistent/unicor/fail # Input that failed to completely process is sent here.
+  alerts_database: /persistent/unicor/state/alerts_db.txt # Keep track of alerts sent and avoid duplicates for a while 
+  alerts_database_max_size: {{ UNICOR_ALERT_DB_MAX_ENTRIES|default('300') }} # This is how many alerts we keep in the buffer before re-notifying  
+  malicious_domains_file: /persistent/unicor/state/misp_domains.txt # fetch-iocs will add domains from MISP here
+  malicious_ips_file: /persistent/unicor/state/misp_ips.txt # fetch-iocs will add IPs from MISP here
+
+alerting:
+  max_alerts: {{ UNICOR_MAX_ALERTS_AT_A_TIME|default('5') }} # Maximum number of alerts to be sent
+  # At least one of the following needs to be enabled. Webhook is the prefered choice.
+{% if UNICOR_WEBHOOK_FILE is defined %}
+  messaging_webhook:  # Slack, Mattermost, Google Chat, etc.
+     webhook_file: {{ UNICOR_WEBHOOK_FILE }}
+     template: "{{ UNICOR_WEBHOOK_TEMPLATE_FILE|default('/etc/unicor/webhook.template') }}"
+{% endif %}
+
+{% if UNICOR_TELEGRAM_BOT_TOKEN_FILE is defined %}
+  telegram:
+    telegram_bot_token_file: {{ UNICOR_TELEGRAM_BOT_TOKEN_FILE }}
+    telegram_chat_id: {{ UNICOR_TELEGRAM_CHAT_ID }}
+    template: "{{ UNICOR_TELEGRAM_TEMPLATE_FILE|default('/etc/unicor/webhook.template') }}"
+{% endif %}
+
+# Note: Google Chat works just like Slack. Just add a Google Chat Webhook URL in the "slack_hook" above
+
+
+{% if UNICOR_EMAIL_SMTP_SERVER is defined %}
+  # Not completely implemented yet?
+  #email:
+  #  from: "{{ UNICOR_EMAIL_FROM_ADDRESS }}"
+  #  subject: "{{ UNICOR_EMAIL_SUBJECT|default('[Unicor] your_org DNS alert') }}"
+  #  summary_to: "{{ UNICOR_EMAIL_TO_ADDRESS }}"
+  #  server: "{{ UNICOR_EMAIL_SMTP_SERVER }}"
+  #  port: "{{ UNICOR_EMAIL_SMTP_PORT|default('25') }}"
+  #  mappings: ## this refers to a sensor, but where is the sensor set?
+  #    - client_id: client_1
+  #      contact: client_1_sec_team@domain.tld
+{% endif %}

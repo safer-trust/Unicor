@@ -5,6 +5,7 @@ from pymisp import PyMISP
 from pathlib import Path
 from utils import file as unicor_file_utils
 from utils import time as unicor_time_utils
+from utils import secret
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +42,8 @@ def fetch_iocs(ctx,
     # Set up MISP connections
     misp_connections = []
     for misp_conf in ctx.obj['CONFIG']["misp_servers"]:
-        misp = PyMISP(misp_conf['domain'], misp_conf['api_key'], misp_conf['verify_ssl'], debug=misp_conf['debug'])
+        api_key = secret.load_from_file_or_config(misp_conf, 'api_key', logger)
+        misp = PyMISP(misp_conf['domain'], api_key, misp_conf['verify_ssl'], debug=misp_conf['debug'])
         if misp:
             misp_connections.append((misp, misp_conf['args'], misp_conf['ioc_stagging']))
 
@@ -154,7 +156,7 @@ def fetch_iocs(ctx,
 
     if domains_file.is_file():
         # File exists, let's try to update it
-        domains_iter, _ = unicor_file_utils.read_file(Path(correlation_config['malicious_domains_file']), delete_after_read=False)
+        domains_iter, _ = unicor_file_utils.read_file(Path(correlation_config['malicious_domains_file']))
         for domain in domains_iter:
             domain_attributes_old.append(domain.strip())
 
@@ -170,7 +172,7 @@ def fetch_iocs(ctx,
 
     if ips_file.is_file():
         # File exists, let's try to update it
-        ips_iter, _ = unicor_file_utils.read_file(Path(correlation_config['malicious_ips_file']), delete_after_read=False)
+        ips_iter, _ = unicor_file_utils.read_file(Path(correlation_config['malicious_ips_file']))
         for ip in ips_iter:
             ips_attributes_old.append(ip.strip())
 

@@ -1,0 +1,10 @@
+# /etc/crontab for containerized unicor
+# Normal execution requires peridoic execution.
+# We could use something wild like a while-sleep loop, but there's
+# a tool for this that works nicely.
+
+40,10 * * * * unicor ( /usr/local/bin/unicor fetch-iocs ) >> /persistent/log/unicor-fetch-iocs.log 2>&1
+50,20 * * * * unicor ( /usr/local/bin/unicor correlate ) >> /persistent/log/unicor-correlate.log 2>&1
+00,30 * * * * unicor ( /usr/local/bin/unicor alert ) >> /persistent/log/unicor-alert.log 2>&1
+0,30 * * * * root /usr/bin/logrotate /etc/logrotate.conf
+

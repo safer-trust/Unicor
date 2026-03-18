@@ -52,52 +52,60 @@ An example `dnstap` alert in Slack:
 
 ### 1. Installing Unicor
 
-#### 1.1 Binary installation
-The recommended installation path is to use a binary form of Unicor, produced by PyInstaller.
+#### 1.1 Containerization
+The recommended installation path is to build your own Unicor image using the included Dockerfile.
+This was developed using `podman` though `docker` should work if directly substituted.
 
-The easiest way to get a binary x86_64 Unicor is:
 
  ```sh
- sudo curl -Lo /usr/local/bin/unicor https://github.com/safer-trust/Unicor/raw/refs/heads/main/src/dist/unicor
- chmod +x /usr/local/bin/unicor
+ ls Dockerfile
+ podman build -t unicor-local:latest .
  ```
 
-It is recommended to compile it on the local system from the repository as follows.
+The entrypoint expects persistent storage at `/persistent` in the container. To prevent a flood of
+alerts whenever the container is restarted, make sure non-ephemeral storage is mounted there. A bind-mount or
+persistent volume claim will work nicely.
 
-(It may be necessary to install dependencies and specifically reference PyMISP)
-```
-pip install pyinstaller
-git clone https://github.com/safer-trust/unicor.git
-cd unicor/
-pip install -r requirements.txt
-src/
-PYMISP_PATH=$(python3 -c "import pymisp, os; print(os.path.dirname(pymisp.__file__))")
-sed -i "s|('\([^']*\)/pymisp', 'pymisp')|('$PYMISP_PATH', 'pymisp')|g" unicor.spec
-pyinstaller unicor.spec
-```
-Then the binary will be readily available:
-```
- ./dist/unicor 
-Usage: unicor [OPTIONS] COMMAND [ARGS]...
+By default the container will exec `crond` in the foreground, which in turn runs `unicor` according to `/etc/crontab`.
+Otherwise extra args to `podman run ...` are passed directly to `unicor`.
+Use `podman run ... sh` to start a shell instead.
 
-Options:
-  -c, --config FILE  Read option defaults from the specified yaml file
-                     [default: /etc/unicor/config.yml]
-  --help             Show this message and exit.
+Note: The container will create a `unicor` account, and attempt to run unicor in that context, as opposed to `root`.
+Note 2: The entrypoint script will create a `/persistent/unicor/config.yml` file if none exists. Use the environment variables below to influence its contents.
 
-Commands:
-  alert       Raise alerts for spotted incidents
-  correlate   Correlate input files and output matches
-  fetch-iocs  Fetch IOCs from intelligence sources
-```
-A ELF 64-bit dynamically linked version is also directly available in the [dist directory](https://github.com/safer-trust/unicor/tree/main/src/dist) of the repository.
+#####  1.1.1 Environment Variables
 
-Move the binary in one of the executable PATH, for example:
+###### General
+`UNICOR_LOGGING_LEVEL` - The level of logging verbosity, default INFO.
 
-```sh
-sudo cp ./dist/unicor /usr/local/bin/
-```
+`UNICOR_MISP_DOMAIN` - The URL to the MISP instance.
 
+`UNICOR_MISP_API_KEY_FILE` - The path to a file in the container which contains the MISP API key on the first line, default `/run/secrets/misp_api_key`.
+
+`UNICOR_ALERT_DB_MAX_ENTRIES` - The maximum number of alerts suppressed due to being duplicates or already sent. Once this limit is exceeded, previous alerts may be sent if they are picked up by `unicor correlate`. Default is 300.
+
+`UNICOR_ALWAYS_REBUILD_CONFIG` - If defined and set to `y`, the `entrypoint` script will always rebuild the config file when the container (re)starts.
+
+`UNICOR_MAX_ALERTS_AT_A_TIME` - Maximum number of alerts to send during a `unicor alert` invocation. Default is 5.
+
+###### Webhook Alert
+`UNICOR_WEBHOOK_FILE` - The path to a file in the container which contains the webhook URL. Set this to enable alerting via webhook.
+
+`UNICOR_WEBHOOK_TEMPLATE_FILE` - The path to a file in the container which contains a jinja2 template for webhook alerts. Default is `/etc/unicor/webhook.template`.
+
+###### Telegram Alert
+`UNICOR_TELEGRAM_BOT_TOKEN_FILE` - The path to a file in the container which contains the Telegram bot token file. Set this to enable alerting via Telegram.
+
+`UNICOR_TELEGRAM_CHAT_ID` - The Telegram chat ID. Required if using Telegram.
+
+`UNICOR_TELEGRAM_TEMPLATE_FILE` - The path to a file in the container which contains a jinja2 template for telegram alerts. Default is `/etc/unicor/webhook.template`.
+
+##### 1.1.2 A Word on Secrets
+Environment variables are not a safe place for secrets. Not only are they propagated through the container's process tree, they may also be captured in the container config files and ultimately published accidentally.
+
+Because of these risks, we do not encourage constructs that put secrets in the container environment. Please use one of the following to get your secrets into files in the container:
+  - Container managment's secret-handling features.
+  - Bind-mount a file/directory in.
 
 #### 1.2 Repo installation
 
@@ -105,22 +113,12 @@ This is not recommended and may result in a number of issues with Python depende
 
 ```
 git clone https://github.com/safer-trust/unicor.git
-cd unicor/
-pip install -r requirements.txt
-cd src
-python3 -m unicor
-```
-
-For compatibility with the rest of this guide, it is also necessary to create a script executing `python3 -m unicor`, available in $PATH.
-For example, a Bash or Python script in `/usr/local/bin/unicor`:
-
-```
-sudo bash -c 'echo -e "#!/bin/bash\ncd \"$(pwd)\"\npython3 -m unicor \"\$@\"" > /usr/local/bin/unicor && chmod +x /usr/local/bin/unicor'
+./unicor
 ```
 
 ### 2. Configuring Unicor
 
-#### 2.1 Filesystem preparation
+#### 2.1 Filesystem preparation (if not using the containerized approach)
 
 Create the relevant user, files and directories, and assign permissions:
 
@@ -135,7 +133,7 @@ Create the relevant user, files and directories, and assign permissions:
 
 #### 2.2 Configuration file & CRON
 
-- Create the Unicor configuration file (`config.yml`) under `/etc/unicor/`, based on the [Unicor template](https://raw.githubusercontent.com/safer-trust/Unicor/refs/heads/main/config/config.yml).
+- Create the Unicor configuration file (`config.yml`) under `/etc/unicor/`, based on the [Unicor template](https://raw.githubusercontent.com/safer-trust/Unicor/refs/heads/main/config/config.yml). [Skip if containerized]
 
    ```sh
    mkdir -p /etc/unicor/
@@ -143,7 +141,7 @@ Create the relevant user, files and directories, and assign permissions:
    chown -R unicor:unicor /etc/unicor
    ```
 
-- Copy the alerting templates:
+- Copy the alerting templates: [Skip if containerized]
    ```sh
    cp templates/* /etc/unicor/
    ```
@@ -154,7 +152,7 @@ Create the relevant user, files and directories, and assign permissions:
   vi /etc/unicor/config.yml
   ```
 
-- Test your configuration file
+- Test your configuration file [If containerized, lint your yml outside the container]
   ```sh
   # pip install yamllint
   # yamllint /etc/unicor/config.yml
@@ -174,7 +172,7 @@ CURL_CA_BUNDLE=/var/containers/misp-jisc/persistent/misp/tls/misp.crt /usr/local
 ```
 For installations from the repo, it is recommended to add the `CURL_CA_BUNDLE` variable directly in `/usr/local/bin`
 
-- Add a CRON to run Unicor on a schedule, for example in `/etc/crontab`:
+- Add a CRON to run Unicor on a schedule, for example in `/etc/crontab`: [Skip if containerized]
 
   ```
   * * * * * unicor /usr/local/bin/unicor fetch-iocs  >> /var/log/unicor-fetch-iocs.log 2>&1
