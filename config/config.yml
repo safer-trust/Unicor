@@ -24,8 +24,10 @@ misp_servers:
          ioc_date: "2022-12-25 12:00:00" # All IOCs from after Xmas 2022 with the "SAFER" tag 
 
 correlation: # use this if no files are defined from commmand line
-  input_dir: /var/unicor/matches # This is were JSON input from dns-collector, Zeek, etc. goes
-  output_dir: /var/unicor/alerts # Unicor correlate will produce alerts to be sent here
+  input_dir: /var/unicor/input # This is were JSON input from dns-collector, Zeek, etc. goes
+  output_dir: /var/unicor/alerts # Unicor correlate will produce alerts to be sent here.
+  archive_dir: /var/unicor/archive # Input is saved here after processing for retroactive lookup.
+  fail_dir: /var/unicor/fail # Input that failed to completely process is sent here.
   alerts_database: /var/unicor/alerts_db.txt # Keep track of alerts sent and avoid duplicates for a while 
   alerts_database_max_size: 300 # This is how many alerts we keep in the buffer before re-notifying  
   malicious_domains_file: /var/unicor/misp_domains.txt # fetch-iocs will add domains from MISP here

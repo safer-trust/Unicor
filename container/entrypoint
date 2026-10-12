@@ -1,0 +1,81 @@
+#!/bin/sh
+set -u
+
+# This is the container entrypoint script, it's meant to be run as "root" in the container.
+
+# What do we expect unicor to run as? (hint: /etc/crontab must agree)
+UNICOR_USER=unicor
+
+# Basic housekeeping, some directories and things need to exist.
+# If they don't, create them and put some reasonable defaults in if needed.
+
+# Logs go in /persistent/log. We're running as the 'unicor' user, so make sure logs can
+# be written.
+# 
+# The same for several other directories.
+for D in \
+  /persistent \
+  /persistent/log \
+  /persistent/unicor \
+  /persistent/unicor/input \
+  /persistent/unicor/alerts \
+  /persistent/unicor/archive \
+  /persistent/unicor/state \
+  /persistent/unicor/fail ; do
+  if [ ! -d "${D}" ]; then
+    mkdir "${D}" || exit 1
+  fi
+  LOGOWNER=$( stat -L -c '%U' "${D}" )
+  if [ "${LOGOWNER}" != "${UNICOR_USER}" ]; then
+    chown "${UNICOR_USER}" "${D}" || exit 1
+  fi
+done
+
+# We can generate a config file if it's missing.
+# Some use cases might favor always generating one, even if it's there already.
+REBUILD_CONFIG=0
+if [ ! -f /persistent/unicor/config.yml ]; then
+  REBUILD_CONFIG=1
+fi
+
+if [ "${UNICOR_ALWAYS_REBUILD_CONFIG+z}" = "z" ] && [ "${UNICOR_ALWAYS_REBUILD_CONFIG}" = "y" ]; then
+  REBUILD_CONFIG=1
+fi
+
+# Note: we have a symlink at the default location pointing at
+# /persistent so that it can be replaced easily.
+if [ "${REBUILD_CONFIG}" = 1 ]; then
+  /render-config /etc/unicor/config-template.yml > /persistent/unicor/config.yml
+  chown "${UNICOR_USER}" /persistent/unicor/config.yml
+fi
+
+
+function printhelp
+{
+  echo "Usage: $0 <action> [<action args>]" 1>&2
+  echo " Action: cron - normal container startup with crond driven action" 1>&2
+  echo " Action: sh - start a shell" 1>&2
+  echo " Action: (all others) passed to unicor as-is" 1>&2
+  exit 1
+}
+
+# If there are no args, display some help
+if [ ${#@} -eq 0 ]; then
+  printhelp
+fi
+
+# Normally crond drives everything.
+if [ "${1}" == "cron" ]; then
+  echo "Execing to crond for normal operation"
+  exec /usr/bin/crond -f -s -m off
+fi
+
+# We keep crond in the foreground so the container stays running, and dies when cron does.
+# Sometimes you just want a shell.
+if [ "${1}" == "sh" ]; then
+  exec /bin/sh
+fi
+
+# Everything else is for unicor, pass any arguments in.
+exec su -c "/usr/local/bin/unicor ${@}" unicor  
+

@@ -1,0 +1,24 @@
+#!/usr/bin/python
+
+# This will render a j2 file using environment variables.
+import sys
+import os
+import jinja2
+
+
+jenv = jinja2.Environment()
+
+# Load the template body
+if ( len(sys.argv) < 2 ):
+    print("Usage: %s <template file>" % ( sys.argv[0] ), file=sys.stderr)
+    exit(1)
+template_file = sys.argv[1]
+try:
+    with open(template_file, 'r') as f:
+        jtemplate = jenv.from_string(f.read())
+except Exception as e:
+    print("Failed to load template: %s" % ( e ), file=sys.stderr)
+    exit(1)
+
+# render!
+print(jtemplate.render(os.environ))   

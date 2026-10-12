@@ -1,16 +1,16 @@
 import json
-import ipaddress
 import logging
 from . import time as unicor_time_utils
 from cachetools import cached
 from cachetools.keys import hashkey
 import pytz
+import netaddr
 
 logger = logging.getLogger("unicorcli")
 
 @cached(cache={}, key=lambda domain, domain_set: hashkey(domain))
 def correlate_domain(domain, domain_set):
-    if domain in domain_set:
+    if domain_set.get(domain) is not None:
         return True
     else:
         return False
@@ -18,10 +18,8 @@ def correlate_domain(domain, domain_set):
 @cached(cache={}, key=lambda ip_structure, ip_set: hashkey(ip_structure['rdata']))
 def correlate_ip(ip_structure, ip_set):
     if ip_structure['rdatatype'] == 'A' or ip_structure['rdatatype'] == 'AAAA':
-        ip_answer = ipaddress.ip_address(ip_structure['rdata'])
-        for network in ip_set:
-            if ip_answer in network:
-                return True
+        if ip_structure['rdata'] in ip_set:
+            return True
     return False
 
 
@@ -32,11 +30,11 @@ def correlate_events(lines, shared_data):
     domain = ""
     for match in lines:
     # Extract the timestamp, domain and ips
-        logger.debug("Parsing: {}".format(match))
+        #logger.debug("Parsing: {}".format(match))
 
         # Testing if input is pdns. If so, input can be a domain, an array of IPs, or both
-        if match.get('dns', {}).get('id'):
-            logger.debug("DNS mode")
+        if match.get('dns', {}).get('id') is not None:
+            #logger.debug("DNS mode")
             match['ioc_type'] = "dns" #Not sure yet if ioc_type is an IP or a domain
             if is_minified:
                 try:
@@ -54,7 +52,7 @@ def correlate_events(lines, shared_data):
                     logger.warning("Unable to digest timestamp: {}".format(match))
                 domain = match['dns']['qname']
                 ips = match['dns']['resource-records']['an']
-                logger.debug("IOC: {}".format(domain))
+                #logger.debug("IOC: {}".format(domain))
 
             answers =  ', '.join([f"{entry['rdata'].split(' ', 1)[-1]} [{entry['rdatatype']}]" for entry in ips])
             if not answers:
@@ -81,9 +79,9 @@ def correlate_events(lines, shared_data):
             else:
                 # Check if 'ioc' looks like an IP. If not, it must be a domain, right?
                 try:
-                    ipaddress.ip_address(match['ioc'])
+                    testip = netaddr.IPAddress(match['ioc'])
                     logger.debug("Found an IOC IP address: {}".format(match['ioc']))
-                    if ipaddress.ip_address(match['ioc']).version == 4:
+                    if testip.version == 4:
                         rdatatype = "A"
                     else:
                         rdatatype = "AAAA"
@@ -126,26 +124,3 @@ def correlate_file(file_iter, domain_attributes, ip_attributes, domain_attribute
     total_matches = correlate_events(file_iter, (domain_attributes, ip_attributes, domain_attributes_metadata, ip_attributes_metadata, is_minified))
     return total_matches
 
-def flatten_detections(matches):
-    single_input = isinstance(matches, dict) and "detections" in matches
-
-    iterable = (
-        [matches] if single_input
-        else matches.values() if isinstance(matches, dict)
-        else matches
-    )
-
-    flattened = []
-
-    for data in iterable:
-        detections = data.get("detections", [])
-
-        if len(detections) == 1:
-            merged = {**data, **detections[0]}
-            merged.pop("detections", None)
-            flattened.append(merged)
-        else:
-            flattened.append(data)
-
-    # Preserve original input type
-    return flattened[0] if single_input else flattened

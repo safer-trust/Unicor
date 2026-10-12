@@ -11,16 +11,10 @@
 {% endif -%}
 {% if match['detections'] %}
 {%- for event in match['detections'] %}
-- {%- if event['url'] -%}<{{ event['url'] }}|{%- endif -%}*Detection {{loop.index}}*{%- if event['url'] -%}>{%- endif %} ({{ event['timestamp_rfc3339ns'][:19] + 'Z' }}):
+- {%- if event['url'] -%}<{{ event['url'] }}|{%- endif -%}*Detection{% if loop.length > 1 %}{{loop.index}}{% endif %}*{%- if event['url'] -%}>{%- endif %} ({{ event['timestamp_rfc3339ns'][:19] + 'Z' }}):
 > {{ event['detection'] | replace('\n', '\n>') }}
     {%- if event['uid'] %}
 > UID: {{ event['uid'] }}
     {%- endif -%}
 {% endfor %}
-{% else %}
-{%- if match['url'] -%}<{{ match['url'] }}|{%- endif -%}*Detection*{%- if match['url'] -%}>{%- endif %} ({{ timestamp }}):
-> {{ match['detection'] | replace('\n', '\n>') }}
-{%- if match['uid'] %}
-> UID: {{ match['uid'] }}
-{% endif %}
 {% endif %}

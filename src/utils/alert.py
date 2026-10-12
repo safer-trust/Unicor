@@ -13,30 +13,51 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from utils.time import parse_rfc3339_ns
 from datetime import timedelta
+from utils import secret
 
 logger = logging.getLogger(__name__)
 
 # Add a hash of new alerts in a file if they are new
-def register_new_alert(alerts_database, alerts_database_max_size, alert):
+def register_new_alert(alerts_database, alerts_database_max_size, match):
+
+    # The match contains one or more detections, each one has an alert_pattern stashed in it during duplicate-checking.
+    # We'll need a way to centrally convert detections to a hash key, but this will do for now.
+    alert_patterns = []
+    if match.get('detections'):
+        for d in match.get('detections'):
+            alert_patterns.append(d['alert_pattern'])
+
     try:
-      with open(alerts_database, 'r+') as file:
-        hashes = file.read().splitlines()
-        if alert not in hashes:
-            logger.debug("Registering new alert in {} : {}".format(alerts_database, alert))
+        with open(alerts_database, 'r') as file:
+            hashes = file.read().splitlines()
+      
+        alert_patterns_to_add = []
+        for ap in alert_patterns:
+            if ap not in hashes:
+                alert_patterns_to_add.append(ap)
+
+        if len(alert_patterns_to_add) > 0:
+            logger.debug("Registering new alert patterns in {} : {}".format(alerts_database, alert_patterns_to_add))
             try:
                 # Trim the database if it is bigger than its max size and add our alert 
                 if len(hashes) >= alerts_database_max_size:
                     hashes = hashes[-(alerts_database_max_size - 1):]
-                hashes.append(alert)
-                file.seek(0)
-                file.truncate()
-                file.write('\n'.join(hashes) + '\n')
-                return True
+                hashes += alert_patterns
+                # Re-trim if we added too many
+                if len(hashes) >= alerts_database_max_size:
+                    hashes = hashes[-(alerts_database_max_size - 1):]
+
+                # Write new version of db
+                with open(alerts_database, 'r+') as file:
+                    file.seek(0)
+                    file.truncate()
+                    file.write('\n'.join(hashes) + '\n')
+                    return True
             except IOError as e:
                 logger.warning("Error writing to {}: {}".format(alerts_database.e))
                 return False
             return True
-      return False
+        return False
     except IOError as e:
         logger.warning("Error accessing file {}: {}".format(alerts_database.e))
         return False
@@ -70,28 +91,21 @@ def parse_msg(path, variables):
     return msg
 
 def build_msg(path, match):
-    # Load all alerts in one template
-    timestamp = ""
-    if not match.get('detections'): # We have a single detection, we need to extract + format timestamp
-        dt = datetime.strptime(
-            (match.get("timestamp") or match.get("timestamp_rfc3339ns"))[:26], "%Y-%m-%dT%H:%M:%S.%f")
-        timestamp =  dt.strftime("%Y-%m-%d %H:%M:%SZ")
     context = {
         'events': match.get('correlation', {}).get('misp', {}).get('events', []),
         'match': match,
-        'timestamp': timestamp,
     }
     msg = parse_msg(path, context)
     return msg
 
-def messaging_webhook_alerts(match, config, alert_pattern, alerts_database, alerts_database_max_size, alert_type):
+def messaging_webhook_alerts(match, config, alerts_database, alerts_database_max_size, alert_type):
     #logger.debug("messaging_webhook hook {}".format(config['webhook']))
 #    if 'correlation' in match and 'misp' in match['correlation'] and 'events' in match['correlation']['misp']:
     if match.get('correlation', {}).get('misp', {}).get('events'):
         # Let's build a message
         msg = build_msg(config['template'], match)            
     else:
-        logger.error("No MISP correlation data found for {}".format(alert_pattern))
+        logger.error("No MISP correlation data found for {}".format(match['ioc']))
         # Alerting anyway, without any MISP context
         msg = build_msg(config['template'], match)            
     logger.debug("MSG: {}".format(msg))
@@ -99,28 +113,31 @@ def messaging_webhook_alerts(match, config, alert_pattern, alerts_database, aler
     alert_log = match.get("detections", [{}])[0].get("detection", match.get("detection"))  
     logger.info(f"Alerting about: {match['uid'] + ': ' if 'uid' in match else ''}{alert_log}") 
     # SENDING!
-    
-    if config.get('webhook'):
+
+    # Webhook?
+    webhook_url = secret.load_from_file_or_config(config, 'webhook', logger, allow_neither=True)
+    if ( webhook_url is not None):
         payload = {"text": f"{msg}"}
         headers = {"Content-type": "application/json"}
         try:
-            response = requests.post(config['webhook'], headers=headers, json=payload)
+            response = requests.post(webhook_url, headers=headers, json=payload)
             logger.debug("Webhook: {} - {}".format(response.status_code, response.text))
             response.raise_for_status()  # This will raise an HTTPError if the response was an HTTP error
             # If the request worked, then register the alert in our "database" to avoir duplicate alerts
-            register_new_alert(alerts_database, alerts_database_max_size, alert_pattern)
+            register_new_alert(alerts_database, alerts_database_max_size, match)
         except requests.exceptions.RequestException as e:
             logger.warning("Webhook post failed: {}".format(e))
-            
+    
+    # Telegram?
     if config.get('telegram_chat_id'):
+        telegram_bot_token = secret.load_from_file_or_config(config, 'telegram_bot_token', logger)
         payload = {'chat_id': config['telegram_chat_id'], 'text': msg}
-        telegram_url = f"https://api.telegram.org/bot{config['telegram_bot_token']}/sendMessage"
-
+        telegram_url = f"https://api.telegram.org/bot{telegram_bot_token}/sendMessage"
         try:
             response = requests.post(telegram_url, data=payload)
             logger.debug("Telegram: {} - {}".format(response.status_code, response.text))
             response.raise_for_status()  # This will raise an HTTPError if the response was an HTTP error
-            register_new_alert(alerts_database, alerts_database_max_size, alert_pattern)
+            register_new_alert(alerts_database, alerts_database_max_size, match)
         except requests.exceptions.RequestException as e:
             logger.warning("Telegram post failed: {}".format(e))
 
